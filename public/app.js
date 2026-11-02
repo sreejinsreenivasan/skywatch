@@ -57,6 +57,12 @@ function App(){
   const emptyLocation={name:"",subtitle:"",latitude:"",longitude:"",elevation_m:"0",timezone:"Asia/Kolkata",is_favourite:false,is_primary:false,observation_notes:"",coordinates_verified:false};
   const [locationForm,setLocationForm]=useState(emptyLocation);
   const searchSequence=useRef(0);
+  const [discoverTarget,setDiscoverTarget]=useState("sunset");
+  const [discoverRegion,setDiscoverRegion]=useState("saved");
+  const [discoveryForecasts,setDiscoveryForecasts]=useState({});
+  const [photoBusy,setPhotoBusy]=useState(false),[photoError,setPhotoError]=useState("");
+  const [photoMeta,setPhotoMeta]=useState(null),[photoName,setPhotoName]=useState(""),[photoDirection,setPhotoDirection]=useState("unknown"),[photoSaving,setPhotoSaving]=useState(false);
+
 
   async function loadLocations(includeArchived=true){
     try{
@@ -143,6 +149,75 @@ function App(){
       if(action==="archive"&&location===id){const primary=refreshed.find(x=>x.is_primary&&!x.is_archived);if(primary)setLocation(primary.id);else setLocation(refreshed.find(x=>!x.is_archived)?.id||"");setShowLocations(false);}
     }catch(e){setLocationMessage(e.message||"Could not update location.");}
     finally{setLocationBusy(false);}
+  }
+
+  useEffect(()=>{
+    if(!locations.length)return;
+    let cancelled=false;
+    const activeLocations=locations.filter(x=>!x.is_archived);
+    Promise.all(activeLocations.map(async loc=>{
+      try{const r=await fetch(API+"/forecast?location="+encodeURIComponent(loc.id));const j=await r.json();return [loc.id,r.ok?j:null];}
+      catch(e){return [loc.id,null];}
+    })).then(entries=>{if(!cancelled)setDiscoveryForecasts(Object.fromEntries(entries));});
+    return ()=>{cancelled=true;};
+  },[locations]);
+  const discoverRanked=locations.filter(x=>!x.is_archived).map(loc=>{
+    const f=discoveryForecasts[loc.id];const d=f?.days?.find(x=>x.isToday)||f?.days?.[0];
+    let score=0,label="Forecast unavailable",reason="Forecast has not loaded yet.",confidence="No data";
+    if(d){
+      score=Math.round(discoverTarget==="sunrise"?(d.dawn?.colour??0):discoverTarget==="afterglow"?(d.dusk?.afterglow??0):discoverTarget==="sunset-visibility"?(d.dusk?.visibility??0):(d.dusk?.colour??0));
+      label=score>=75?"Strong potential":score>=55?"Worth watching":score>=35?"Limited potential":"Low potential";
+      reason=discoverTarget==="afterglow"?"Post-sunset cloud illumination estimate":discoverTarget==="sunrise"?"Eastern-sky morning colour estimate":discoverTarget==="sunset-visibility"?"Estimated direct Sun visibility":"Western-sky evening colour estimate";
+      confidence=(d.dusk?.confidence??d.dawn?.confidence??0)+"% model confidence";
+    }
+    return {loc,forecast:d,score,label,reason,confidence};
+  }).sort((a,b)=>b.score-a.score);
+  function parseExifGps(tags){
+    const g=tags.gps||tags;const lat=g.GPSLatitude,lon=g.GPSLongitude;
+    if(!lat||!lon)return {latitude:null,longitude:null};
+    const val=a=>Number(a[0])+Number(a[1])/60+Number(a[2])/3600;
+    let latitude=val(lat),longitude=val(lon);
+    if(g.GPSLatitudeRef==="S")latitude=-latitude;
+    if(g.GPSLongitudeRef==="W")longitude=-longitude;
+    return {latitude,longitude};
+  }
+  async function handlePhotoSelect(event){
+    const file=event.target.files?.[0];if(!file)return;
+    setPhotoBusy(true);setPhotoError("");setPhotoMeta(null);
+    if(file.size>15*1024*1024){setPhotoError("Please choose an image smaller than 15 MB.");setPhotoBusy(false);return;}
+    try{
+      if(!window.ExifReader)throw new Error("Photo metadata reader could not load. Check your connection and try again.");
+      const tags=await ExifReader.load(file,{expanded:false});
+      const gps=parseExifGps(tags);
+      const exif=tags.exif||{};
+      const date=exif.DateTimeOriginal?.description||exif.DateTimeDigitized?.description||exif.DateTime?.description||"";
+      const captureTime=date?date.replace(/^([0-9]{4}):([0-9]{2}):([0-9]{2})/,"$1-$2-$3"):"";
+      const camera=[exif.Make?.description,exif.Model?.description].filter(Boolean).join(" ");
+      const focal=exif.FocalLength?.description||"";
+      const preview=URL.createObjectURL(file);
+      setPhotoMeta({filename:file.name,...gps,captureTime,camera,focalLength:focal,preview});
+      setPhotoName(file.name.replace(/\.[^.]+$/,"").slice(0,70));
+    }catch(e){setPhotoError(e.message||"Could not read this photograph's metadata.");}
+    finally{setPhotoBusy(false);}
+  }
+  async function savePhotoViewpoint(){
+    if(!photoMeta||photoMeta.latitude==null||photoMeta.longitude==null)return;
+    setPhotoSaving(true);setPhotoError("");
+    try{
+      const reverse=await fetch("https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat="+photoMeta.latitude+"&lon="+photoMeta.longitude);
+      const place=reverse.ok?await reverse.json():{};
+      const address=place.address||{};
+      const subtitle=[address.suburb||address.village||address.town||address.city,address.state||address.county].filter(Boolean).join(", ");
+      const payload={name:photoName.trim(),subtitle:subtitle||"Imported from photograph",latitude:photoMeta.latitude,longitude:photoMeta.longitude,elevation_m:0,timezone:"Asia/Kolkata",is_favourite:true,is_primary:false,observation_notes:"Photo viewpoint imported from EXIF. Capture time: "+(photoMeta.captureTime||"unknown")+". Viewing direction: "+photoDirection+". Verify exact position, elevation and time zone.",coordinates_verified:false};
+      const r=await fetch(API+"/locations",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+      const j=await r.json();if(!r.ok)throw new Error(j.error||"Could not save viewpoint.");
+      await loadLocations(true);setLocation(j.location.id);clearPhoto();setPhotoError("Viewpoint saved to your locations.");
+    }catch(e){setPhotoError(e.message||"Could not save viewpoint.");}
+    finally{setPhotoSaving(false);}
+  }
+  function clearPhoto(){
+    if(photoMeta?.preview)URL.revokeObjectURL(photoMeta.preview);
+    setPhotoMeta(null);setPhotoName("");setPhotoDirection("unknown");
   }
   async function loadForecast(loc){
     setLoading(true);setError("");
@@ -252,11 +327,63 @@ function App(){
       </section>`:null}
     <nav className="main-nav" aria-label="Main navigation">
       <button className=${navSection==="today"?"nav-active":""} onClick=${()=>{setNavSection("today");document.querySelector(".sky-canvas")?.scrollIntoView({behavior:"smooth"});}}>Today</button>
+      <button className=${navSection==="discover"?"nav-active":""} onClick=${()=>{setNavSection("discover");document.querySelector(".discover-screen")?.scrollIntoView({behavior:"smooth"});}}>Discover</button>
       <button className=${navSection==="explore"?"nav-active":""} onClick=${()=>{setNavSection("explore");document.getElementById("explore-section")?.scrollIntoView({behavior:"smooth"});}}>Explore</button>
-      <button className=${navSection==="timeline"?"nav-active":""} onClick=${()=>{setNavSection("timeline");setActive("twilight");document.getElementById("timeline-section")?.scrollIntoView({behavior:"smooth"});}}>Timeline</button>
       <button className=${navSection==="journal"?"nav-active":""} onClick=${()=>{setNavSection("journal");document.getElementById("journal-section")?.scrollIntoView({behavior:"smooth"});}}>Journal</button>
-      <button className=${navSection==="settings"?"nav-active":""} onClick=${()=>{setNavSection("settings");setShowLocations(true);setEditingLocation(null);setLocationMessage("");document.querySelector(".topbar")?.scrollIntoView({behavior:"smooth"});}}>Settings</button>
+      <button className=${navSection==="settings"?"nav-active":""} onClick=${()=>{setNavSection("settings");setShowLocations(true);setEditingLocation(null);setLocationMessage("");document.querySelector(".topbar")?.scrollIntoView({behavior:"smooth"});}}>Locations</button>
     </nav>
+
+
+    <section className="discover-screen" aria-label="Regional sky discovery">
+      <div className="discover-hero">
+        <div className="eyebrow">SKYWATCH DISCOVER / REGIONAL INTELLIGENCE</div>
+        <h1>Find the sky.<br/><em>Choose the view.</em></h1>
+        <p>Compare the places you follow and find the most promising viewpoint for the light you want to photograph.</p>
+        <div className="discover-controls">
+          <label>REGION <select value=${discoverRegion} onChange=${e=>setDiscoverRegion(e.target.value)}><option value="saved">My saved locations</option><option value="kerala">Kerala · saved locations</option></select></label>
+          <label>PHOTOGRAPH <select value=${discoverTarget} onChange=${e=>setDiscoverTarget(e.target.value)}><option value="sunset">Dramatic sunset</option><option value="afterglow">Afterglow</option><option value="sunset-visibility">Direct Sun visibility</option><option value="sunrise">Sunrise colours</option></select></label>
+        </div>
+      </div>
+      <div className="discover-summary"><span className="eyebrow">YOUR LOCATION SHORTLIST</span><strong>${discoverRanked.length} places compared</strong><small>Rankings use each saved location's forecast. They are heuristic potential scores, not calibrated success probabilities.</small></div>
+      <div className="discover-list">
+        ${discoverRanked.map((item,index)=>html`
+          <article className="discover-card" key=${item.loc.id}>
+            <div className="discover-rank">${String(index+1).padStart(2,"0")}</div>
+            <div className="discover-main">
+              <div className="discover-place-head"><div><h3>${item.loc.name}</h3><p>${item.loc.subtitle||Number(item.loc.latitude).toFixed(3)+", "+Number(item.loc.longitude).toFixed(3)}</p></div><span className="discover-score">${item.score}<small>/100</small></span></div>
+              <div className="discover-track"><i style=${{width:item.score+"%"}}></i></div>
+              <div className="discover-reason">${item.reason}</div>
+              <div className="discover-meta"><span>${item.label}</span><span>Sunset ${item.forecast?localTime(item.forecast.sunset):"—"}</span><span>${item.confidence}</span></div>
+            </div>
+            <button className="discover-open" onClick=${()=>{setLocation(item.loc.id);setNavSection("today");document.querySelector(".sky-canvas")?.scrollIntoView({behavior:"smooth"});}}>View forecast ↗</button>
+          </article>`)}
+        ${discoverRanked.length===0?html`<div className="discover-empty">Add a few locations to start comparing regional sky conditions.</div>`:null}
+      </div>
+      <div className="photo-import">
+        <div className="eyebrow">BUILD YOUR VIEWPOINT LIBRARY</div>
+        <h2>Have a photograph of a beautiful sky?</h2>
+        <p>Select a photo from your device. Skywatch reads available EXIF metadata in your browser to find its capture time and GPS coordinates. The original photo is not uploaded or stored in this version.</p>
+        <label className="photo-drop">
+          <input type="file" accept="image/jpeg,image/tiff,image/heic,image/heif,image/webp,image/png" onChange=${handlePhotoSelect}/>
+          <span className="photo-drop-icon">＋</span><strong>Select a photograph</strong><small>JPEG is best for GPS and camera metadata · 15 MB maximum</small>
+        </label>
+        ${photoBusy?html`<p className="photo-feedback">Reading image metadata…</p>`:null}
+        ${photoError?html`<p className="photo-feedback">${photoError}</p>`:null}
+        ${photoMeta?html`
+          <div className="photo-review">
+            <img src=${photoMeta.preview} alt="Selected photograph preview"/>
+            <div className="photo-review-data"><strong>${photoMeta.filename}</strong><span>${photoMeta.captureTime||"Capture time not found"}</span><span>${photoMeta.latitude!=null?photoMeta.latitude.toFixed(5)+", "+photoMeta.longitude.toFixed(5):"GPS coordinates not found"}</span><span>${photoMeta.camera||"Camera model unavailable"} ${photoMeta.focalLength?"· "+photoMeta.focalLength:""}</span></div>
+            <div className="photo-confirm">
+              <label>VIEWPOINT NAME<input value=${photoName} onChange=${e=>setPhotoName(e.target.value)} placeholder="e.g. Hilltop sunset point"/></label>
+              <label>VIEWING DIRECTION<select value=${photoDirection} onChange=${e=>setPhotoDirection(e.target.value)}><option value="unknown">Not known</option><option value="east">East · sunrise</option><option value="west">West · sunset / afterglow</option><option value="north">North</option><option value="south">South</option></select></label>
+              ${photoMeta.latitude==null?html`<p className="photo-feedback">No GPS was embedded. Add this location manually through Locations.</p>`:null}
+              <button disabled=${photoSaving||photoMeta.latitude==null||!photoName.trim()} onClick=${savePhotoViewpoint}>${photoSaving?"Saving…":"Save as observation viewpoint"}</button>
+              <button className="photo-cancel" onClick=${clearPhoto}>Discard photo</button>
+            </div>
+          </div>`:null}
+      </div>
+      <div className="discover-note">Privacy: metadata is processed locally in your browser. Saved viewpoints retain coordinates and descriptive details, not the original photograph.</div>
+    </section>
 
     <section className="today-heading" id="today-section"><div><div className="eyebrow">FIELD OBSERVATORY / ${new Intl.DateTimeFormat("en-IN",{timeZone:data?.timezone||"Asia/Kolkata",weekday:"long",day:"2-digit",month:"long"}).format(new Date())}</div><h1>The sky, <em>observed.</em></h1><p>Look closer. Know when. Understand why.</p></div><div className="station-meta"><span className="station-dot"></span><div><strong>${locations.find(x=>x.id===location)?.name||locName}</strong><small>${Number(locations.find(x=>x.id===location)?.latitude??data?.location?.lat??0).toFixed(4)}° N · ${Number(locations.find(x=>x.id===location)?.longitude??data?.location?.lon??0).toFixed(4)}° E</small></div><button onClick=${()=>setShowLocations(true)}>Change station</button></div></section>
 
