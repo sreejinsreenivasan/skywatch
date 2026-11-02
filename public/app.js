@@ -33,6 +33,7 @@ function App(){
   const [error,setError]=useState("");
   const [selectedDate,setSelectedDate]=useState("");
   const [active,setActive]=useState("sun");
+  const [profile,setProfile]=useState("aurora");
   const [observations,setObservations]=useState([]);
   const [phenomenon,setPhenomenon]=useState("sunrise_sunset");
   const [rating,setRating]=useState(4);
@@ -75,7 +76,7 @@ function App(){
   }
 
   return html`
-  <main className="shell">
+  <main className=${"shell theme-"+active+" profile-"+profile}>
     <header className="topbar">
       <div className="brand"><div className="brand-mark">✳</div><div><div className="brand-name">SKYWATCH</div><div className="brand-sub">Atmospheric intelligence</div></div></div>
       <div className="top-meta">10.6° N · Kerala, India &nbsp; / &nbsp; Field edition 01</div>
@@ -89,34 +90,35 @@ function App(){
       </div>
       <div className="location-area">
         <div className="location-caption">Observation station</div>
+        <div className="profile-picker"><span>Sky palette</span><div className="profile-options"><button className=${profile==="aurora"?"selected":""} onClick=${()=>setProfile("aurora")}><i className="swatch aurora"></i>Aurora</button><button className=${profile==="ember"?"selected":""} onClick=${()=>setProfile("ember")}><i className="swatch ember"></i>Ember</button><button className=${profile==="ocean"?"selected":""} onClick=${()=>setProfile("ocean")}><i className="swatch ocean"></i>Ocean</button><button className=${profile==="moon"?"selected":""} onClick=${()=>setProfile("moon")}><i className="swatch moon"></i>Moon</button></div></div>
         <div className="location-switch">
-          <button className=${location==="minalur"?"active":""} onClick={()=>setLocation("minalur")}>Minalur</button>
-          <button className=${location==="peruvanmala"?"active":""} onClick={()=>setLocation("peruvanmala")}>Peruvanmala</button>
+          <button className=${location==="minalur"?"active":""} onClick=${()=>setLocation("minalur")}>Minalur</button>
+          <button className=${location==="peruvanmala"?"active":""} onClick=${()=>setLocation("peruvanmala")}>Peruvanmala</button>
         </div>
       </div>
     </section>
 
-    ${loading?html`<div className="loading">Reading the latest atmospheric forecast…</div>`:error?html`<div className="error">${error}<br/><button onClick={()=>loadForecast(location)}>Try again</button></div>`:data?html`
+    ${loading?html`<div className="loading">Reading the latest atmospheric forecast…</div>`:error?html`<div className="error">${error}<br/><button onClick=${()=>loadForecast(location)}>Try again</button></div>`:data?html`
       <div className="date-strip">
-        ${data.days.map(d=>html`<button key=${d.date} className=${selectedDate===d.date?"active":""} onClick={()=>setSelectedDate(d.date)}><strong>${d.isToday?"Today":d.label}</strong><span>${d.date}</span></button>`)}
+        ${data.days.map(d=>html`<button key=${d.date} className=${selectedDate===d.date?"active":""} onClick=${()=>setSelectedDate(d.date)}><strong>${d.isToday?"Today":d.label}</strong><span>${d.date}</span></button>`)}
       </div>
 
       <section className="module-grid">
-        <button className=${"module-card "+(active==="sun"?"active":"")} onClick={()=>setActive("sun")}>
+        <button className=${"module-card "+(active==="sun"?"active":"")} onClick=${()=>setActive("sun")}>
           <div className="module-top"><span className="module-icon">◉</span><span className="module-number">01 / SOLAR</span></div>
           <div className="module-label">Sunrise & sunset colour</div>
           <div className="module-score">${day?.dusk.colour??"—"}<small>/ 100</small></div>
           <div className="module-status">${scoreWord(day?.dusk.colour??0)}</div>
           <div className="module-meter"><span style=${{width:(day?.dusk.colour??0)+"%"}}></span></div>
         </button>
-        <button className=${"module-card "+(active==="twilight"?"active":"")} onClick={()=>setActive("twilight")}>
+        <button className=${"module-card "+(active==="twilight"?"active":"")} onClick=${()=>setActive("twilight")}>
           <div className="module-top"><span className="module-icon">☾</span><span className="module-number">02 / TWILIGHT</span></div>
           <div className="module-label">Twilight & blue hour</div>
           <div className="module-score">${day?.dusk.confidence??"—"}<small>% data confidence</small></div>
           <div className="module-status">Blue-hour times calculated astronomically</div>
           <div className="module-meter"><span style=${{width:(day?.dusk.confidence??0)+"%",background:"var(--blue)"}}></span></div>
         </button>
-        <button className=${"module-card "+(active==="halo"?"active":"")} onClick={()=>setActive("halo")}>
+        <button className=${"module-card "+(active==="halo"?"active":"")} onClick=${()=>setActive("halo")}>
           <div className="module-top"><span className="module-icon">◎</span><span className="module-number">03 / LUNAR OPTICS</span></div>
           <div className="module-label">22° lunar halo conditions</div>
           <div className="module-score">${halo?.score??"—"}<small>/ 100</small></div>
@@ -218,11 +220,11 @@ function App(){
       </div>
       <div>
         <div className="form-grid">
-          <div className="field"><label>Phenomenon</label><select value=${phenomenon} onChange={e=>setPhenomenon(e.target.value)}><option value="sunrise_sunset">Sunrise / sunset</option><option value="twilight">Twilight / blue hour</option><option value="lunar_halo">Lunar halo</option></select></div>
-          <div className="field"><label>Location</label><select value=${location} onChange={e=>setLocation(e.target.value)}><option value="minalur">Minalur</option><option value="peruvanmala">Peruvanmala</option></select></div>
-          <div className="field full"><label>Observed quality · 1 poor to 5 exceptional</label><div className="rating">${[1,2,3,4,5].map(n=>html`<button type="button" className=${rating===n?"selected":""} onClick={()=>setRating(n)}>${n} ★</button>`)}</div></div>
-          <div className="field full"><label>What did you observe?</label><textarea value=${notes} onChange={e=>setNotes(e.target.value)} placeholder="Cloud shape, colour, halo clarity, duration, direction…"></textarea></div>
-          <div className="field full"><button className="save-button" disabled=${saving} onClick={saveObservation}>${saving?"Saving…":"Save field observation"}</button>${message?html`<div className="form-message">${message}</div>`:null}</div>
+          <div className="field"><label>Phenomenon</label><select value=${phenomenon} onChange=${e=>setPhenomenon(e.target.value)}><option value="sunrise_sunset">Sunrise / sunset</option><option value="twilight">Twilight / blue hour</option><option value="lunar_halo">Lunar halo</option></select></div>
+          <div className="field"><label>Location</label><select value=${location} onChange=${e=>setLocation(e.target.value)}><option value="minalur">Minalur</option><option value="peruvanmala">Peruvanmala</option></select></div>
+          <div className="field full"><label>Observed quality · 1 poor to 5 exceptional</label><div className="rating">${[1,2,3,4,5].map(n=>html`<button type="button" className=${rating===n?"selected":""} onClick=${()=>setRating(n)}>${n} ★</button>`)}</div></div>
+          <div className="field full"><label>What did you observe?</label><textarea value=${notes} onChange=${e=>setNotes(e.target.value)} placeholder="Cloud shape, colour, halo clarity, duration, direction…"></textarea></div>
+          <div className="field full"><button className="save-button" disabled=${saving} onClick=${saveObservation}>${saving?"Saving…":"Save field observation"}</button>${message?html`<div className="form-message">${message}</div>`:null}</div>
         </div>
       </div>
     </section>

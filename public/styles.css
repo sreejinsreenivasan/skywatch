@@ -12,3 +12,24 @@ button,input,textarea,select{font:inherit}button{cursor:pointer}.shell{max-width
 .footer{display:flex;justify-content:space-between;gap:20px;border-top:1px solid var(--line);padding-top:18px;margin-top:26px;color:#6f8795;font:10px var(--mono);line-height:1.7}.footer a{color:var(--teal);text-decoration:none}.loading,.error{padding:55px 20px;text-align:center;color:var(--muted);border:1px solid var(--line);border-radius:16px;background:rgba(12,28,42,.7)}.error button{margin-top:12px;background:var(--teal);border:0;border-radius:7px;padding:9px 13px;color:#06201e}.boot{font:700 14px var(--mono);letter-spacing:.2em;padding:40px;color:var(--teal)}.boot span{display:block;color:var(--muted);letter-spacing:0;font:12px var(--sans);margin-top:10px}
 @media(max-width:800px){.shell{padding:22px 18px 50px}.hero{grid-template-columns:1fr;gap:24px}.location-area{justify-self:start;width:100%}.module-grid{grid-template-columns:1fr}.module-card{min-height:0}.module-card .module-label{margin:12px 0 8px}.content-panel{padding:18px}.detail-grid,.journal{grid-template-columns:1fr}.metrics{grid-template-columns:repeat(2,1fr)}.timeline{grid-template-columns:repeat(2,1fr)}.top-meta{display:none}.footer{flex-direction:column}.panel-heading{flex-direction:column}.confidence{align-self:flex-start}}
 @media(max-width:430px){.shell{padding-left:13px;padding-right:13px}.hero h1{font-size:39px}.big-times{grid-template-columns:1fr 1fr}.time-block strong{font-size:21px}.metrics{grid-template-columns:1fr 1fr}.form-grid{grid-template-columns:1fr}.field.full{grid-column:auto}.content-panel{padding:15px}}
+
+/* Skywatch atmospheric colour profiles */
+.shell{position:relative;isolation:isolate}
+.shell:before,.shell:after{content:"";position:fixed;z-index:-1;pointer-events:none;inset:-22vh -18vw auto;height:92vh;opacity:.72;filter:blur(55px);transform:translate3d(0,0,0)}
+.shell:before{background:radial-gradient(ellipse at 18% 30%,var(--sky-a),transparent 42%),radial-gradient(ellipse at 78% 22%,var(--sky-b),transparent 38%),radial-gradient(ellipse at 54% 75%,var(--sky-c),transparent 46%);animation:sky-drift 24s ease-in-out infinite alternate}
+.shell:after{inset:auto -12vw -30vh;height:72vh;opacity:.32;background:radial-gradient(ellipse at 55% 35%,var(--sky-b),transparent 55%);animation:sky-drift 31s ease-in-out infinite alternate-reverse}
+.profile-aurora{--sky-a:rgba(32,151,157,.34);--sky-b:rgba(48,91,157,.35);--sky-c:rgba(89,73,146,.22)}
+.profile-ember{--sky-a:rgba(239,119,73,.38);--sky-b:rgba(193,75,116,.30);--sky-c:rgba(243,174,91,.25)}
+.profile-ocean{--sky-a:rgba(34,119,174,.42);--sky-b:rgba(42,171,181,.28);--sky-c:rgba(52,85,155,.28)}
+.profile-moon{--sky-a:rgba(116,135,174,.34);--sky-b:rgba(103,91,151,.32);--sky-c:rgba(68,107,139,.22)}
+@keyframes sky-drift{0%{transform:translate3d(-2%,0,0) scale(1)}100%{transform:translate3d(3%,4%,0) scale(1.12)}}
+.profile-picker{margin-top:14px}.profile-picker>span{display:block;font:10px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.profile-options{display:flex;flex-wrap:wrap;gap:6px}.profile-options button{display:flex;align-items:center;gap:6px;padding:7px 9px;border-radius:20px;border:1px solid var(--line);background:rgba(7,18,30,.48);color:var(--muted);font-size:10px}
+.profile-options button.selected{border-color:rgba(117,211,197,.55);color:var(--text);background:rgba(19,48,61,.7)}
+.swatch{display:block;width:10px;height:10px;border-radius:50%}.swatch.aurora{background:linear-gradient(135deg,#69dfc7,#6f7de5)}.swatch.ember{background:linear-gradient(135deg,#ffb36c,#df6388)}.swatch.ocean{background:linear-gradient(135deg,#55cde0,#386db8)}.swatch.moon{background:linear-gradient(135deg,#c4d5e8,#8476b9)}
+.hero{position:relative}.module-card,.content-panel,.date-strip button,.location-switch{backdrop-filter:blur(14px)}
+.module-card{background:linear-gradient(145deg,rgba(16,35,51,.78),rgba(10,25,38,.68))}
+.content-panel{background:linear-gradient(145deg,rgba(10,25,38,.78),rgba(8,20,31,.72))}
+.topbar{border-color:rgba(190,220,236,.16)}
+@media(prefers-reduced-motion:reduce){.shell:before,.shell:after{animation:none}}
+@media(max-width:800px){.profile-options{gap:5px}.profile-options button{padding:7px 8px}}
