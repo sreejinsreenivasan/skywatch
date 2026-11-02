@@ -33,3 +33,28 @@ button,input,textarea,select{font:inherit}button{cursor:pointer}.shell{max-width
 .topbar{border-color:rgba(190,220,236,.16)}
 @media(prefers-reduced-motion:reduce){.shell:before,.shell:after{animation:none}}
 @media(max-width:800px){.profile-options{gap:5px}.profile-options button{padding:7px 8px}}
+
+/* Live sky scene: combines the selected palette with the forecast's current phenomenon */
+.scene-sunset{--scene-a:rgba(255,137,91,.40);--scene-b:rgba(230,91,125,.30);--scene-c:rgba(255,195,119,.24)}
+.scene-twilight{--scene-a:rgba(63,139,207,.42);--scene-b:rgba(92,105,187,.30);--scene-c:rgba(87,196,207,.19)}
+.scene-lunar{--scene-a:rgba(175,193,226,.34);--scene-b:rgba(129,116,188,.32);--scene-c:rgba(103,151,184,.22)}
+.shell:before{background:
+ radial-gradient(ellipse at 15% 23%,var(--sky-a),transparent 40%),
+ radial-gradient(ellipse at 82% 18%,var(--sky-b),transparent 38%),
+ radial-gradient(ellipse at 55% 76%,var(--sky-c),transparent 43%),
+ radial-gradient(ellipse at 38% 38%,var(--scene-a),transparent 49%),
+ radial-gradient(ellipse at 88% 62%,var(--scene-b),transparent 43%),
+ radial-gradient(ellipse at 8% 82%,var(--scene-c),transparent 45%);
+ animation:sky-drift 26s ease-in-out infinite alternate}
+.shell:after{background:
+ radial-gradient(ellipse at 52% 30%,var(--scene-a),transparent 54%),
+ radial-gradient(ellipse at 18% 75%,var(--sky-b),transparent 47%),
+ radial-gradient(ellipse at 86% 78%,var(--scene-c),transparent 50%);
+ animation:sky-drift 34s ease-in-out infinite alternate-reverse}
+.scene-indicator{display:grid;grid-template-columns:9px auto 1fr;align-items:center;gap:7px;margin-top:11px;padding:9px 11px;border:1px solid var(--line);border-radius:10px;background:rgba(7,18,30,.40);backdrop-filter:blur(12px)}
+.scene-indicator i{width:7px;height:7px;border-radius:50%;background:var(--teal);box-shadow:0 0 14px var(--teal);animation:scene-pulse 2.4s ease-in-out infinite}
+.scene-indicator span{font:9px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.scene-indicator strong{font-size:10px;font-weight:600;color:var(--text);justify-self:end}
+.scene-indicator small{grid-column:2/4;font-size:9px;color:var(--muted)}
+@keyframes scene-pulse{0%,100%{opacity:.55;transform:scale(.85)}50%{opacity:1;transform:scale(1.18)}}
+@media(prefers-reduced-motion:reduce){.scene-indicator i{animation:none}}

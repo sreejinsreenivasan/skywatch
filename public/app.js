@@ -62,6 +62,10 @@ function App(){
   const twilight=data?.twilight.find(x=>x.date===selectedDate)||data?.twilight[0];
   const halo=data?.halo;
   const locName=data?.location?.name||"Skywatch";
+  const sunsetScore=day?.dusk?.colour??0;
+  const haloScore=halo?.score??0;
+  const scene = active==="halo" && haloScore>=50 ? "lunar" : active==="twilight" ? "twilight" : active==="sun" && sunsetScore>=55 ? "sunset" : (haloScore>=72 ? "lunar" : sunsetScore>=55 ? "sunset" : "twilight");
+  const sceneLabel = scene==="sunset" ? "Sunset colours" : scene==="lunar" ? "Lunar atmosphere" : "Blue-hour atmosphere";
   async function saveObservation(){
     setSaving(true);setMessage("");
     try{
@@ -76,7 +80,7 @@ function App(){
   }
 
   return html`
-  <main className=${"shell theme-"+active+" profile-"+profile}>
+  <main className=${"shell theme-"+active+" profile-"+profile+" scene-"+scene}>
     <header className="topbar">
       <div className="brand"><div className="brand-mark">✳</div><div><div className="brand-name">SKYWATCH</div><div className="brand-sub">Atmospheric intelligence</div></div></div>
       <div className="top-meta">10.6° N · Kerala, India &nbsp; / &nbsp; Field edition 01</div>
@@ -90,7 +94,7 @@ function App(){
       </div>
       <div className="location-area">
         <div className="location-caption">Observation station</div>
-        <div className="profile-picker"><span>Sky palette</span><div className="profile-options"><button className=${profile==="aurora"?"selected":""} onClick=${()=>setProfile("aurora")}><i className="swatch aurora"></i>Aurora</button><button className=${profile==="ember"?"selected":""} onClick=${()=>setProfile("ember")}><i className="swatch ember"></i>Ember</button><button className=${profile==="ocean"?"selected":""} onClick=${()=>setProfile("ocean")}><i className="swatch ocean"></i>Ocean</button><button className=${profile==="moon"?"selected":""} onClick=${()=>setProfile("moon")}><i className="swatch moon"></i>Moon</button></div></div>
+        <div className="profile-picker"><span>Sky palette</span><div className="profile-options"><button className=${profile==="aurora"?"selected":""} onClick=${()=>setProfile("aurora")}><i className="swatch aurora"></i>Aurora</button><button className=${profile==="ember"?"selected":""} onClick=${()=>setProfile("ember")}><i className="swatch ember"></i>Ember</button><button className=${profile==="ocean"?"selected":""} onClick=${()=>setProfile("ocean")}><i className="swatch ocean"></i>Ocean</button><button className=${profile==="moon"?"selected":""} onClick=${()=>setProfile("moon")}><i className="swatch moon"></i>Moon</button></div></div><div className="scene-indicator"><i></i><span>Live atmosphere</span><strong>${sceneLabel}</strong><small>Changes with the selected forecast and module</small></div>
         <div className="location-switch">
           <button className=${location==="minalur"?"active":""} onClick=${()=>setLocation("minalur")}>Minalur</button>
           <button className=${location==="peruvanmala"?"active":""} onClick=${()=>setLocation("peruvanmala")}>Peruvanmala</button>
