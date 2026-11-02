@@ -639,21 +639,19 @@ ${loading?html`<div className="loading">Reading the latest atmospheric forecast�
 </section></section>
 <section className="app-screen ${navSection==="sunrise"?"screen-active":"screen-hidden"}" id="screen-sunrise">
 <section className="screen-detail">
-  <div className="screen-title"><span className="eyebrow">MORNING OBSERVATORY</span><h1>Sunrise</h1><p>Eastern horizon · ${locName}</p></div>
-  <div className="event-feature sunrise-feature"><div><span>LOCAL SUNRISE</span><strong>${localTime(day?.sunrise)}</strong></div><div><span>COLOUR POTENTIAL</span><strong>${day?.dawn?.colour??"—"}<small>/100</small></strong></div></div>
-  <div className="metrics"><${Metric} label="Sun visibility" value=${(day?.dawn?.visibility??"—")+"/100"} sub="Eastern horizon estimate"/><${Metric} label="Colour potential" value=${(day?.dawn?.colour??"—")+"/100"} sub="Morning colour conditions"/><${Metric} label="Data confidence" value=${(day?.dawn?.confidence??"—")+"%"} sub="Heuristic confidence"/></div>
-  <div className="detail-card"><h3>Morning atmosphere</h3><${ReasonList} items=${cloudReasons(day?.conditions?.morning)}/></div>
-  <div className="detail-card"><h3>Observation window</h3><div className="timeline"><div className="timepoint"><span>Blue hour begins</span><strong>${localTime(twilight?.morning?.blueStart)}</strong></div><div className="timepoint"><span>Sunrise</span><strong>${localTime(day?.sunrise)}</strong></div><div className="timepoint"><span>Golden hour ends</span><strong>${localTime(twilight?.morning?.goldenEnd)}</strong></div></div></div>
-  <p className="note">Sunrise uses its own eastern-sky prediction. Scores are experimental potential estimates, not calibrated probabilities.</p>
+<div className="screen-title"><span className="eyebrow">MORNING OBSERVATORY</span><h1>Sunrise</h1><p>Eastern horizon · ${locName}</p></div>
+<div className="event-feature sunrise-feature"><div><span>LOCAL SUNRISE</span><strong>${localTime(day?.sunrise)}</strong></div><div><span>COLOUR POTENTIAL</span><strong>${day?.dawn?.colour??"—"}/100</strong></div></div>
+<div className="detail-card"><h3>Morning atmosphere</h3><p>Sun visibility: ${day?.dawn?.visibility??"—"}/100 · Confidence: ${day?.dawn?.confidence??"—"}%</p><p>${cloudReasons(day?.conditions?.morning).join(" · ")}</p></div>
+<div className="detail-card"><h3>Observation window</h3><p>Blue hour: ${localTime(twilight?.morning?.blueStart)} · Sunrise: ${localTime(day?.sunrise)} · Golden hour ends: ${localTime(twilight?.morning?.goldenEnd)}</p></div>
+<p className="note">Experimental potential estimates, not calibrated probabilities.</p>
 </section></section>
 <section className="app-screen ${navSection==="sunset"?"screen-active":"screen-hidden"}" id="screen-sunset">
 <section className="screen-detail">
-  <div className="screen-title"><span className="eyebrow">EVENING OBSERVATORY</span><h1>Sunset</h1><p>Western horizon · ${locName}</p></div>
-  <div className="event-feature sunset-feature"><div><span>LOCAL SUNSET</span><strong>${localTime(day?.sunset)}</strong></div><div><span>COLOUR POTENTIAL</span><strong>${day?.dusk?.colour??"—"}<small>/100</small></strong></div></div>
-  <div className="metrics"><${Metric} label="Sun visibility" value=${(day?.dusk?.visibility??"—")+"/100"} sub="Western horizon estimate"/><${Metric} label="Colour potential" value=${(day?.dusk?.colour??"—")+"/100"} sub="Evening colour conditions"/><${Metric} label="Afterglow potential" value=${(day?.dusk?.afterglow??"—")+"/100"} sub="Post-sunset colour"/></div>
-  <div className="detail-card"><h3>Evening atmosphere</h3><${ReasonList} items=${cloudReasons(day?.conditions?.evening)}/></div>
-  <div className="detail-card"><h3>Observation window</h3><div className="timeline"><div className="timepoint"><span>Golden hour begins</span><strong>${localTime(twilight?.evening?.goldenStart)}</strong></div><div className="timepoint"><span>Sunset</span><strong>${localTime(day?.sunset)}</strong></div><div className="timepoint"><span>Blue hour begins</span><strong>${localTime(twilight?.evening?.blueStart)}</strong></div><div className="timepoint"><span>Blue hour ends</span><strong>${localTime(twilight?.evening?.blueEnd)}</strong></div></div></div>
-  <p className="note">Sunset and afterglow use independent evening analysis. Scores are experimental potential estimates, not calibrated probabilities.</p>
+<div className="screen-title"><span className="eyebrow">EVENING OBSERVATORY</span><h1>Sunset</h1><p>Western horizon · ${locName}</p></div>
+<div className="event-feature sunset-feature"><div><span>LOCAL SUNSET</span><strong>${localTime(day?.sunset)}</strong></div><div><span>COLOUR POTENTIAL</span><strong>${day?.dusk?.colour??"—"}/100</strong></div></div>
+<div className="detail-card"><h3>Evening atmosphere</h3><p>Sun visibility: ${day?.dusk?.visibility??"—"}/100 · Afterglow: ${day?.dusk?.afterglow??"—"}/100</p><p>${cloudReasons(day?.conditions?.evening).join(" · ")}</p></div>
+<div className="detail-card"><h3>Observation window</h3><p>Golden hour: ${localTime(twilight?.evening?.goldenStart)} · Sunset: ${localTime(day?.sunset)} · Blue hour: ${localTime(twilight?.evening?.blueStart)}–${localTime(twilight?.evening?.blueEnd)}</p></div>
+<p className="note">Experimental potential estimates, not calibrated probabilities.</p>
 </section></section>
 <section className="app-screen ${navSection==="discover"?"screen-active":"screen-hidden"}" id="screen-discover">    <section className="discover-screen" aria-label="Regional sky discovery">
       <div className="discover-hero">
