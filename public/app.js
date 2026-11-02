@@ -636,7 +636,7 @@ ${loading?html`<div className="loading">Reading the latest atmospheric forecast�
 <button onClick=${()=>setNavSection("sunset")}>Open sunset forecast ↗</button>
 <button onClick=${()=>setNavSection("explore")}>Twilight and lunar halo ↗</button>
 </div>
-</section></section>
+</section>
 <section className="app-screen ${navSection==="sunrise"?"screen-active":"screen-hidden"}" id="screen-sunrise">
 <section className="screen-detail">
 <div className="screen-title"><span className="eyebrow">MORNING OBSERVATORY</span><h1>Sunrise</h1><p>Eastern horizon · ${locName}</p></div>
