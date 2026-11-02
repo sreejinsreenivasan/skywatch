@@ -554,14 +554,14 @@ ${loading?html`<div className="loading">Reading the latest atmospheric forecast�
             </div>
             <div className="detail-card">
               <h3>What the atmosphere suggests · sunset</h3>
-              <${ReasonList} items=${cloudReasons(day?.conditions.evening)}/>
+              <div className="reason-list">${cloudReasons(day?.conditions.evening).map((x,i)=>html`<div className="reason" key=${i}><i className="reason-dot"></i><span>${x}</span></div>`)}</div>
             </div>
           </div>
           <div className="metrics">
-            <${Metric} label="Sun visibility" value=${day?.dusk.visibility+"/100"} sub="Horizon obstruction proxy"/>
-            <${Metric} label="Colour potential" value=${day?.dusk.colour+"/100"} sub="Golden · pink · peach"/>
-            <${Metric} label="Afterglow potential" value=${day?.dusk.afterglow+"/100"} sub="Post-sunset colour"/>
-            <${Metric} label="Dawn colour" value=${day?.dawn.colour+"/100"} sub="Eastern-sky estimate"/>
+            <div className="metric"><span>Sun visibility</span><strong>${day?.dusk.visibility+"/100"}</strong><small>Horizon obstruction proxy</small></div>
+            <div className="metric"><span>Colour potential</span><strong>${day?.dusk.colour+"/100"}</strong><small>Golden · pink · peach</small></div>
+            <div className="metric"><span>Afterglow potential</span><strong>${day?.dusk.afterglow+"/100"}</strong><small>Post-sunset colour</small></div>
+            <div className="metric"><span>Dawn colour</span><strong>${day?.dawn.colour+"/100"}</strong><small>Eastern-sky estimate</small></div>
           </div>
           <div className="note">Confidence estimates are conservative and rule-based, not statistically calibrated. The current model samples forecast cloud layers at the location, not a full east/west horizon scan. Local terrain, distant cloud banks and aerosol optical depth can materially change the actual view. Treat this as a planning signal, not a guaranteed colourful sunset.</div>
           <div className="detail-card forecast-provenance">
@@ -593,10 +593,10 @@ ${loading?html`<div className="loading">Reading the latest atmospheric forecast�
             </div></div>
           </div>
           <div className="metrics">
-            <${Metric} label="Civil twilight" value="0° → −6°" sub="Sun below horizon"/>
-            <${Metric} label="Nautical twilight" value="−6° → −12°" sub="Horizon often visible at sea"/>
-            <${Metric} label="Astronomical" value="−12° → −18°" sub="Dark-sky transition"/>
-            <${Metric} label="Blue hour" value="−6° ↔ −4°" sub="Skywatch definition"/>
+            <div className="metric"><span>Civil twilight</span><strong>0° → −6°</strong><small>Sun below horizon</small></div>
+            <div className="metric"><span>Nautical twilight</span><strong>−6° → −12°</strong><small>Horizon often visible at sea</small></div>
+            <div className="metric"><span>Astronomical</span><strong>−12° → −18°</strong><small>Dark-sky transition</small></div>
+            <div className="metric"><span>Blue hour</span><strong>−6° ↔ −4°</strong><small>Skywatch definition</small></div>
           </div>
           <div className="note">Golden hour is shown as the interval while the Sun is between +6° and the horizon. Blue hour is not a formal astronomical twilight class; cameras, humidity, aerosols and the local horizon shift its perceived start and end.</div>
         `:html`
@@ -612,19 +612,19 @@ ${loading?html`<div className="loading">Reading the latest atmospheric forecast�
                 <div className="time-block"><span>Moon altitude</span><strong>${halo?.moonAltitude==null?"—":halo.moonAltitude+"°"}</strong></div>
               </div>
               <div className="metrics">
-                <${Metric} label="Moon phase" value=${halo?.phase||"—"} sub=${(halo?.illumination??0)+"% illuminated"}/>
-                <${Metric} label="Atmospheric formation" value=${(halo?.formationScore??0)+"/100"} sub="Cloud and altitude setup"/>
-                <${Metric} label="Moonlight contribution" value=${(halo?.moonlightFactor??0)+"/100"} sub="Visibility-limiting factor"/>
-                <${Metric} label="High cloud" value=${cap(halo?.clouds?.high)} sub="Possible ice-cloud proxy"/>
+                <div className="metric"><span>Moon phase</span><strong>${halo?.phase||"—"}</strong><small>${(halo?.illumination??0)+"% illuminated"}</small></div>
+                <div className="metric"><span>Atmospheric formation</span><strong>${(halo?.formationScore??0)+"/100"}</strong><small>Cloud and altitude setup</small></div>
+                <div className="metric"><span>Moonlight contribution</span><strong>${(halo?.moonlightFactor??0)+"/100"}</strong><small>Visibility-limiting factor</small></div>
+                <div className="metric"><span>High cloud</span><strong>${cap(halo?.clouds?.high)}</strong><small>Possible ice-cloud proxy</small></div>
               </div>
             </div>
-            <div className="detail-card"><h3>Signals behind this estimate</h3><${ReasonList} items=${halo?.clouds?cloudReasons(halo.clouds):["Moon altitude and cloud data are not sufficient to estimate tonight's viewing conditions."]}/></div>
+            <div className="detail-card"><h3>Signals behind this estimate</h3><div className="reason-list">${(halo?.clouds?cloudReasons(halo.clouds):["Moon altitude and cloud data are not sufficient to estimate tonight's viewing conditions."]).map((x,i)=>html`<div className="reason" key=${i}><i className="reason-dot"></i><span>${x}</span></div>`)}</div></div>
           </div>
           <div className="metrics">
-            <${Metric} label="Halo conditions" value=${(halo?.score??0)+"/100"} sub=${halo?.label||"—"}/>
-            <${Metric} label="Moon visibility" value=${halo?.moonAltitude!=null&&halo.moonAltitude>10?"Possible":"Unfavourable"} sub="Altitude-based estimate"/>
-            <${Metric} label="Cloud phase" value="Unknown" sub="No direct ice-phase data"/>
-            <${Metric} label="Optical thickness" value="Unknown" sub="Not supplied by provider"/>
+            <div className="metric"><span>Halo conditions</span><strong>${(halo?.score??0)+"/100"}</strong><small>${halo?.label||"—"}</small></div>
+            <div className="metric"><span>Moon visibility</span><strong>${halo?.moonAltitude!=null&&halo.moonAltitude>10?"Possible":"Unfavourable"}</strong><small>Altitude-based estimate</small></div>
+            <div className="metric"><span>Cloud phase</span><strong>Unknown</strong><small>No direct ice-phase data</small></div>
+            <div className="metric"><span>Optical thickness</span><strong>Unknown</strong><small>Not supplied by provider</small></div>
           </div>
           <div className="note"><span className="pill warn">How to read this score</span><br/>The viewing score combines cloud/altitude conditions with available moonlight. A halo can form around a crescent Moon, but it will be dimmer and harder to see. ${halo?.caveat}</div>
         `}
@@ -837,14 +837,14 @@ ${loading?html`<div className="loading">Reading the latest atmospheric forecast�
             </div>
             <div className="detail-card">
               <h3>What the atmosphere suggests · sunset</h3>
-              <${ReasonList} items=${cloudReasons(day?.conditions.evening)}/>
+              <div className="reason-list">${cloudReasons(day?.conditions.evening).map((x,i)=>html`<div className="reason" key=${i}><i className="reason-dot"></i><span>${x}</span></div>`)}</div>
             </div>
           </div>
           <div className="metrics">
-            <${Metric} label="Sun visibility" value=${day?.dusk.visibility+"/100"} sub="Horizon obstruction proxy"/>
-            <${Metric} label="Colour potential" value=${day?.dusk.colour+"/100"} sub="Golden · pink · peach"/>
-            <${Metric} label="Afterglow potential" value=${day?.dusk.afterglow+"/100"} sub="Post-sunset colour"/>
-            <${Metric} label="Dawn colour" value=${day?.dawn.colour+"/100"} sub="Eastern-sky estimate"/>
+            <div className="metric"><span>Sun visibility</span><strong>${day?.dusk.visibility+"/100"}</strong><small>Horizon obstruction proxy</small></div>
+            <div className="metric"><span>Colour potential</span><strong>${day?.dusk.colour+"/100"}</strong><small>Golden · pink · peach</small></div>
+            <div className="metric"><span>Afterglow potential</span><strong>${day?.dusk.afterglow+"/100"}</strong><small>Post-sunset colour</small></div>
+            <div className="metric"><span>Dawn colour</span><strong>${day?.dawn.colour+"/100"}</strong><small>Eastern-sky estimate</small></div>
           </div>
           <div className="note">Confidence estimates are conservative and rule-based, not statistically calibrated. The current model samples forecast cloud layers at the location, not a full east/west horizon scan. Local terrain, distant cloud banks and aerosol optical depth can materially change the actual view. Treat this as a planning signal, not a guaranteed colourful sunset.</div>
           <div className="detail-card forecast-provenance">
@@ -876,10 +876,10 @@ ${loading?html`<div className="loading">Reading the latest atmospheric forecast�
             </div></div>
           </div>
           <div className="metrics">
-            <${Metric} label="Civil twilight" value="0° → −6°" sub="Sun below horizon"/>
-            <${Metric} label="Nautical twilight" value="−6° → −12°" sub="Horizon often visible at sea"/>
-            <${Metric} label="Astronomical" value="−12° → −18°" sub="Dark-sky transition"/>
-            <${Metric} label="Blue hour" value="−6° ↔ −4°" sub="Skywatch definition"/>
+            <div className="metric"><span>Civil twilight</span><strong>0° → −6°</strong><small>Sun below horizon</small></div>
+            <div className="metric"><span>Nautical twilight</span><strong>−6° → −12°</strong><small>Horizon often visible at sea</small></div>
+            <div className="metric"><span>Astronomical</span><strong>−12° → −18°</strong><small>Dark-sky transition</small></div>
+            <div className="metric"><span>Blue hour</span><strong>−6° ↔ −4°</strong><small>Skywatch definition</small></div>
           </div>
           <div className="note">Golden hour is shown as the interval while the Sun is between +6° and the horizon. Blue hour is not a formal astronomical twilight class; cameras, humidity, aerosols and the local horizon shift its perceived start and end.</div>
         `:html`
@@ -895,19 +895,19 @@ ${loading?html`<div className="loading">Reading the latest atmospheric forecast�
                 <div className="time-block"><span>Moon altitude</span><strong>${halo?.moonAltitude==null?"—":halo.moonAltitude+"°"}</strong></div>
               </div>
               <div className="metrics">
-                <${Metric} label="Moon phase" value=${halo?.phase||"—"} sub=${(halo?.illumination??0)+"% illuminated"}/>
-                <${Metric} label="Atmospheric formation" value=${(halo?.formationScore??0)+"/100"} sub="Cloud and altitude setup"/>
-                <${Metric} label="Moonlight contribution" value=${(halo?.moonlightFactor??0)+"/100"} sub="Visibility-limiting factor"/>
-                <${Metric} label="High cloud" value=${cap(halo?.clouds?.high)} sub="Possible ice-cloud proxy"/>
+                <div className="metric"><span>Moon phase</span><strong>${halo?.phase||"—"}</strong><small>${(halo?.illumination??0)+"% illuminated"}</small></div>
+                <div className="metric"><span>Atmospheric formation</span><strong>${(halo?.formationScore??0)+"/100"}</strong><small>Cloud and altitude setup</small></div>
+                <div className="metric"><span>Moonlight contribution</span><strong>${(halo?.moonlightFactor??0)+"/100"}</strong><small>Visibility-limiting factor</small></div>
+                <div className="metric"><span>High cloud</span><strong>${cap(halo?.clouds?.high)}</strong><small>Possible ice-cloud proxy</small></div>
               </div>
             </div>
-            <div className="detail-card"><h3>Signals behind this estimate</h3><${ReasonList} items=${halo?.clouds?cloudReasons(halo.clouds):["Moon altitude and cloud data are not sufficient to estimate tonight's viewing conditions."]}/></div>
+            <div className="detail-card"><h3>Signals behind this estimate</h3><div className="reason-list">${(halo?.clouds?cloudReasons(halo.clouds):["Moon altitude and cloud data are not sufficient to estimate tonight's viewing conditions."]).map((x,i)=>html`<div className="reason" key=${i}><i className="reason-dot"></i><span>${x}</span></div>`)}</div></div>
           </div>
           <div className="metrics">
-            <${Metric} label="Halo conditions" value=${(halo?.score??0)+"/100"} sub=${halo?.label||"—"}/>
-            <${Metric} label="Moon visibility" value=${halo?.moonAltitude!=null&&halo.moonAltitude>10?"Possible":"Unfavourable"} sub="Altitude-based estimate"/>
-            <${Metric} label="Cloud phase" value="Unknown" sub="No direct ice-phase data"/>
-            <${Metric} label="Optical thickness" value="Unknown" sub="Not supplied by provider"/>
+            <div className="metric"><span>Halo conditions</span><strong>${(halo?.score??0)+"/100"}</strong><small>${halo?.label||"—"}</small></div>
+            <div className="metric"><span>Moon visibility</span><strong>${halo?.moonAltitude!=null&&halo.moonAltitude>10?"Possible":"Unfavourable"}</strong><small>Altitude-based estimate</small></div>
+            <div className="metric"><span>Cloud phase</span><strong>Unknown</strong><small>No direct ice-phase data</small></div>
+            <div className="metric"><span>Optical thickness</span><strong>Unknown</strong><small>Not supplied by provider</small></div>
           </div>
           <div className="note"><span className="pill warn">How to read this score</span><br/>The viewing score combines cloud/altitude conditions with available moonlight. A halo can form around a crescent Moon, but it will be dimmer and harder to see. ${halo?.caveat}</div>
         `}
