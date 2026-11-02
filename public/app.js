@@ -124,7 +124,7 @@ function App(){
         </button>
         <button className=${"module-card "+(active==="halo"?"active":"")} onClick=${()=>setActive("halo")}>
           <div className="module-top"><span className="module-icon">◎</span><span className="module-number">03 / LUNAR OPTICS</span></div>
-          <div className="module-label">22° lunar halo conditions</div>
+          <div className="module-label">22° lunar halo · viewing potential</div>
           <div className="module-score">${halo?.score??"—"}<small>/ 100</small></div>
           <div className="module-status">${halo?.label||"No estimate yet"}</div>
           <div className="module-meter"><span style=${{width:(halo?.score??0)+"%",background:"var(--pink)"}}></span></div>
@@ -188,7 +188,7 @@ function App(){
         `:html`
           <div className="panel-heading">
             <div><div className="eyebrow">Module 03 · Ice-crystal optics</div><h2>Tonight's lunar halo watch</h2><p>Conditions for a possible 22° halo around the Moon. This is distinct from a lunar corona, which forms by diffraction in much smaller cloud droplets or particles.</p></div>
-            <div className="confidence">${halo?.confidence??0}% confidence · conservative</div>
+            <div className="confidence">${halo?.confidence??0}% data confidence · not event probability</div>
           </div>
           <div className="detail-grid">
             <div className="detail-card">
@@ -198,7 +198,9 @@ function App(){
                 <div className="time-block"><span>Moon altitude</span><strong>${halo?.moonAltitude==null?"—":halo.moonAltitude+"°"}</strong></div>
               </div>
               <div className="metrics">
-                <${Metric} label="Moon illumination" value=${(halo?.illumination??0)+"%"} sub="Approximate phase fraction"/>
+                <${Metric} label="Moon phase" value=${halo?.phase||"—"} sub=${(halo?.illumination??0)+"% illuminated"}/>
+                <${Metric} label="Atmospheric formation" value=${(halo?.formationScore??0)+"/100"} sub="Cloud and altitude setup"/>
+                <${Metric} label="Moonlight contribution" value=${(halo?.moonlightFactor??0)+"/100"} sub="Visibility-limiting factor"/>
                 <${Metric} label="High cloud" value=${cap(halo?.clouds?.high)} sub="Possible ice-cloud proxy"/>
               </div>
             </div>
@@ -210,7 +212,7 @@ function App(){
             <${Metric} label="Cloud phase" value="Unknown" sub="No direct ice-phase data"/>
             <${Metric} label="Optical thickness" value="Unknown" sub="Not supplied by provider"/>
           </div>
-          <div className="note"><span className="pill warn">Important limitation</span><br/>${halo?.caveat}</div>
+          <div className="note"><span className="pill warn">How to read this score</span><br/>The viewing score combines cloud/altitude conditions with available moonlight. A halo can form around a crescent Moon, but it will be dimmer and harder to see. ${halo?.caveat}</div>
         `}
       </section>
     `:null}
