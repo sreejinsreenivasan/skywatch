@@ -20,6 +20,8 @@ html{scroll-behavior:smooth;scroll-padding-top:22px}body{margin:0;background:#11
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
 
 /* Location management — station directory */
+.location-search-input{align-items:center}.location-search-status{font:8px var(--mono);letter-spacing:.1em;color:var(--muted);white-space:nowrap;padding:0 8px}.location-search-results button em{font:8px var(--mono);font-style:normal;letter-spacing:.1em;color:var(--amber);margin-top:4px}.location-search-results button:disabled{opacity:.55;cursor:wait}.appearance-light .location-search-status{color:#65717a}
+@media(max-width:520px){.location-search-input{align-items:stretch;flex-direction:column}.location-search-status{padding:5px 0}}
 .observatory-locations{margin:22px 0 30px;padding:28px clamp(18px,3vw,38px);border:1px solid var(--line);background:var(--panel);color:var(--text)}
 .locations-heading,.location-toolbar,.editor-heading,.location-editor-footer{display:flex;justify-content:space-between;align-items:flex-start;gap:20px}
 .locations-heading h2{font:500 clamp(25px,3vw,34px)/1.1 var(--display);letter-spacing:-.045em;margin:9px 0 7px}

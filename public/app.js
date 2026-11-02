@@ -1,4 +1,4 @@
-const {useState,useEffect} = React;
+const {useState,useEffect,useRef} = React;
 const html = htm.bind(React.createElement);
 const API = window.__HATCHABLE__?.api || "/api";
 
@@ -55,6 +55,7 @@ function App(){
   const [locationFormOpen,setLocationFormOpen]=useState(false);
   const emptyLocation={name:"",subtitle:"",latitude:"",longitude:"",elevation_m:"0",timezone:"Asia/Kolkata",is_favourite:false,is_primary:false,observation_notes:"",coordinates_verified:false};
   const [locationForm,setLocationForm]=useState(emptyLocation);
+  const searchSequence=useRef(0);
 
   async function loadLocations(includeArchived=true){
     try{
@@ -75,24 +76,44 @@ function App(){
     setLocationFormOpen(true);
     setShowLocations(true);
   }
-  async function searchLocations(){
-    const query=locationQuery.trim();
-    if(query.length<2){setLocationSearchError("Enter at least two characters to search.");return;}
-    setLocationSearching(true);setLocationSearchError("");setLocationResults([]);
+  async function searchLocations(rawQuery=locationQuery){
+    const query=String(rawQuery||"").trim();
+    const sequence=++searchSequence.current;
+    if(query.length<2){setLocationResults([]);setLocationSearchError("");setLocationSearching(false);return;}
+    setLocationSearching(true);setLocationSearchError("");
     try{
       const url="https://geocoding-api.open-meteo.com/v1/search?name="+encodeURIComponent(query)+"&count=8&language=en&format=json";
       const r=await fetch(url);const j=await r.json();
+      if(sequence!==searchSequence.current)return;
       if(!r.ok)throw new Error("Place search is temporarily unavailable.");
       const results=(j.results||[]).map(x=>({...x,display:[x.name,x.admin1,x.country].filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i).join(", ")}));
       setLocationResults(results);
-      if(!results.length)setLocationSearchError("No matching places found. You can still enter coordinates manually.");
-    }catch(e){setLocationSearchError(e.message||"Could not search places.");}
-    finally{setLocationSearching(false);}
+      if(!results.length)setLocationSearchError("No matching places found. Try a nearby town or landmark.");
+    }catch(e){if(sequence===searchSequence.current)setLocationSearchError(e.message||"Could not search places.");}
+    finally{if(sequence===searchSequence.current)setLocationSearching(false);}
   }
-  function chooseSearchResult(place){
-    setLocationForm({...emptyLocation,name:place.name||"",subtitle:[place.admin1,place.country].filter(Boolean).join(", "),latitude:String(place.latitude),longitude:String(place.longitude),elevation_m:"0",timezone:place.timezone||"Asia/Kolkata",coordinates_verified:false});
-    setLocationResults([]);
-    setLocationSearchError("Place selected. Confirm the coordinates and elevation before saving.");
+  async function chooseSearchResult(place){
+    const duplicate=locations.find(x=>!x.is_archived&&Math.abs(Number(x.latitude)-Number(place.latitude))<0.0001&&Math.abs(Number(x.longitude)-Number(place.longitude))<0.0001);
+    if(duplicate){
+      setLocation(duplicate.id);setLocationSearchError(duplicate.name+" is already saved. Switched to that station.");
+      setLocationResults([]);return;
+    }
+    setLocationBusy(true);setLocationSearchError("");
+    try{
+      const payload={name:place.name||"New location",subtitle:[place.admin1,place.country].filter(Boolean).join(", "),latitude:Number(place.latitude),longitude:Number(place.longitude),elevation_m:0,timezone:place.timezone||"Asia/Kolkata",is_favourite:false,is_primary:false,observation_notes:"Added from place search. Verify the exact observation point and elevation.",coordinates_verified:false};
+      const r=await fetch(API+"/locations",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+      const j=await r.json();
+      if(!r.ok)throw new Error(j.error||"Could not add this location.");
+      const saved=j.location;
+      const refreshed=await loadLocations(true);
+      if(saved?.id)setLocation(saved.id);
+      setLocationResults([]);
+      setLocationQuery("");
+      setLocationSearchError((saved?.name||place.name)+" added to your locations.");
+      setLocationFormOpen(false);
+      setEditingLocation(null);
+    }catch(e){setLocationSearchError(e.message||"Could not add this location.");}
+    finally{setLocationBusy(false);}
   }
   function startEditLocation(loc){
     setEditingLocation(loc.id);
@@ -138,6 +159,7 @@ function App(){
     try{const r=await fetch(API+"/observations");if(r.ok){const j=await r.json();setObservations(j.observations||[]);}}catch(e){}
   }
   useEffect(()=>{loadForecast(location);},[location]);
+  useEffect(()=>{if(!showLocations)return;const q=locationQuery.trim();searchSequence.current+=1;if(q.length<2){setLocationResults([]);setLocationSearchError("");setLocationSearching(false);return;}const timer=setTimeout(()=>searchLocations(q),300);return ()=>clearTimeout(timer);},[locationQuery,showLocations]);
   useEffect(()=>{loadLocations(true);loadObservations();},[]);
   const day=data?.days.find(x=>x.date===selectedDate)||data?.days[0];
   const twilight=data?.twilight.find(x=>x.date===selectedDate)||data?.twilight[0];
@@ -182,10 +204,10 @@ function App(){
           <button className="location-add" onClick=${startNewLocation}>＋ Add a location</button>
         </div>
         <div className="location-search">
-          <div><span className="eyebrow">FIND A PLACE</span><p>Search towns, cities or landmarks, then confirm the coordinates.</p></div>
-          <div className="location-search-input"><input aria-label="Search places" placeholder="e.g. Varkala, Minalur, Kochi" value=${locationQuery} onChange=${e=>setLocationQuery(e.target.value)} onKeyDown=${e=>{if(e.key==="Enter")searchLocations();}}/><button disabled=${locationSearching} onClick=${searchLocations}>${locationSearching?"Searching…":"Search places"}</button></div>
+          <div><span className="eyebrow">FIND A PLACE</span><p>Type to see live results. Select a place to add it directly to your stations.</p></div>
+          <div className="location-search-input"><input aria-label="Search places" placeholder="Start typing a town, city or landmark…" value=${locationQuery} onChange=${e=>setLocationQuery(e.target.value)}/><span className="location-search-status">${locationSearching?"Searching…":locationQuery.trim().length>=2?"LIVE SEARCH":"TYPE TO SEARCH"}</span></div>
           ${locationSearchError?html`<p className="location-feedback">${locationSearchError}</p>`:null}
-          ${locationResults.length?html`<div className="location-search-results">${locationResults.map((place,i)=>html`<button key=${place.id||i} onClick=${()=>chooseSearchResult(place)}><strong>${place.name}</strong><span>${place.display}</span><small>${Number(place.latitude).toFixed(4)}, ${Number(place.longitude).toFixed(4)} · ${place.timezone||"Timezone unavailable"}</small></button>`)}</div>`:null}
+          ${locationResults.length?html`<div className="location-search-results">${locationResults.map((place,i)=>html`<button key=${place.id||i} disabled=${locationBusy} onClick=${()=>chooseSearchResult(place)}><strong>${place.name}</strong><span>${place.display}</span><small>${Number(place.latitude).toFixed(4)}, ${Number(place.longitude).toFixed(4)} · ${place.timezone||"Timezone unavailable"}</small><em>${locationBusy?"ADDING…":"＋ ADD STATION"}</em></button>`)}</div>`:null}
         </div>
         <div className="locations-section-label"><span>YOUR STATIONS</span><span>SELECT A STATION TO OBSERVE FROM</span></div>
         <div className="saved-locations-list">
