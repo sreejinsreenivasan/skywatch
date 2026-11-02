@@ -148,7 +148,7 @@ function App(){
       <button onClick=${()=>document.getElementById("explore-section")?.scrollIntoView({behavior:"smooth"})}>Explore</button>
       <button onClick=${()=>{setActive("twilight");document.getElementById("timeline-section")?.scrollIntoView({behavior:"smooth"});}}>Timeline</button>
       <button onClick=${()=>document.getElementById("journal-section")?.scrollIntoView({behavior:"smooth"})}>Journal</button>
-      <button onClick=${()=>{document.getElementById("settings-section")?.scrollIntoView({behavior:"smooth"});setShowLocations(true);}}>Settings</button>
+      <button onClick=${()=>{setShowLocations(true);setEditingLocation(null);setLocationMessage("");document.querySelector(".topbar")?.scrollIntoView({behavior:"smooth"});}}>Settings</button>
     </nav>
 
     <section className="today-heading" id="today-section"><div><div className="eyebrow">FIELD OBSERVATORY / ${new Intl.DateTimeFormat("en-IN",{timeZone:data?.timezone||"Asia/Kolkata",weekday:"long",day:"2-digit",month:"long"}).format(new Date())}</div><h1>The sky, <em>observed.</em></h1><p>Look closer. Know when. Understand why.</p></div><div className="station-meta"><span className="station-dot"></span><div><strong>${locations.find(x=>x.id===location)?.name||locName}</strong><small>${Number(locations.find(x=>x.id===location)?.latitude??data?.location?.lat??0).toFixed(4)}° N · ${Number(locations.find(x=>x.id===location)?.longitude??data?.location?.lon??0).toFixed(4)}° E</small></div><button onClick=${()=>setShowLocations(true)}>Change station</button></div></section>
