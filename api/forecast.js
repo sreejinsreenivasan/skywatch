@@ -13,6 +13,7 @@ export default async function (req, res) {
   const params = new URLSearchParams({
     latitude: String(loc.lat),
     longitude: String(loc.lon),
+    elevation: String(loc.elevation),
     hourly: "temperature_2m,relative_humidity_2m,dew_point_2m,precipitation_probability,weather_code,cloud_cover,cloud_cover_low,cloud_cover_mid,cloud_cover_high,visibility,wind_speed_10m,wind_direction_10m",
     daily: "sunrise,sunset",
     forecast_days: "5",
