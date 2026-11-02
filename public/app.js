@@ -317,6 +317,13 @@ function App(){
             <${Metric} label="Dawn colour" value=${day?.dawn.colour+"/100"} sub="Eastern-sky estimate"/>
           </div>
           <div className="note">Confidence estimates are conservative and rule-based, not statistically calibrated. The current model samples forecast cloud layers at the location, not a full east/west horizon scan. Local terrain, distant cloud banks and aerosol optical depth can materially change the actual view. Treat this as a planning signal, not a guaranteed colourful sunset.</div>
+          <div className="detail-card forecast-provenance">
+            <h3>Forecast provenance · ${data?.scoring?.version||"legacy model"}</h3>
+            <p>Requested station: ${data?.provenance?.requested?.latitude?.toFixed?.(4)??"—"}°, ${data?.provenance?.requested?.longitude?.toFixed?.(4)??"—"}° · ${data?.provenance?.requested?.elevation_m??"—"} m</p>
+            <p>Open-Meteo grid: ${data?.provenance?.providerGrid?.latitude?.toFixed?.(4)??"—"}°, ${data?.provenance?.providerGrid?.longitude?.toFixed?.(4)??"—"}° · ${data?.provenance?.providerGrid?.elevation_m??"—"} m</p>
+            <p>Model: ${data?.provenance?.model||"Provider model not specified"} · Generated: ${data?.generatedAt?fmtDateTime(data.generatedAt):"—"}</p>
+            <p>${data?.scoring?.note||"Scoring methodology metadata unavailable."}</p>
+          </div>
         `:active==="twilight"?html`
           <div className="panel-heading">
             <div><div className="eyebrow">Module 02 · Light transitions</div><h2>Twilight and blue hour</h2><p>Solar timing is calculated from location and date. The visual blue-hour window is an operational photographic definition.</p></div>

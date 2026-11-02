@@ -29,6 +29,23 @@ export default async function (req, res) {
     const weather = await upstream.json();
     if (!weather.hourly || !weather.hourly.time || !weather.hourly.time.length) return res.status(502).json({ error: "Weather provider returned an incomplete forecast." });
     const forecast = buildForecast(loc, weather);
+    forecast.provenance = {
+      requested: { latitude: loc.lat, longitude: loc.lon, elevation_m: loc.elevation },
+      providerGrid: {
+        latitude: weather.latitude ?? null,
+        longitude: weather.longitude ?? null,
+        elevation_m: weather.elevation ?? null
+      },
+      generationTimeMs: weather.generationtime_ms ?? null,
+      utcOffsetSeconds: weather.utc_offset_seconds ?? null,
+      model: weather.model ?? null,
+      provider: "Open-Meteo"
+    };
+    forecast.scoring = {
+      version: "sunset-colour-v2",
+      weights: { highCloud: 34, midCloud: 8, lowCloud: 28, visibility: 8, precipitationProbability: 12 },
+      note: "Weights are normalized over available inputs. This remains a heuristic: cloud optical thickness, gaps, western-horizon position and aerosol optical depth are not measured."
+    };
     res.setHeader("Cache-Control", "public, max-age=900, stale-while-revalidate=900");
     return res.json(forecast);
   } catch (error) {
