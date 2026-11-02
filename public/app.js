@@ -85,14 +85,21 @@ function App(){
       <div className="brand"><div className="brand-mark">✳</div><div><div className="brand-name">SKYWATCH</div><div className="brand-sub">Atmospheric intelligence</div></div></div>
       <div className="top-meta">10.6° N · Kerala, India &nbsp; / &nbsp; Field edition 01</div>
     </header>
+    <nav className="main-nav" aria-label="Main navigation">
+      <button onClick=${()=>document.getElementById("today-section")?.scrollIntoView({behavior:"smooth"})}>Today</button>
+      <button onClick=${()=>document.getElementById("explore-section")?.scrollIntoView({behavior:"smooth"})}>Explore</button>
+      <button onClick=${()=>{setActive("twilight");document.getElementById("explore-section")?.scrollIntoView({behavior:"smooth"});}}>Timeline</button>
+      <button onClick=${()=>document.getElementById("journal-section")?.scrollIntoView({behavior:"smooth"})}>Journal</button>
+      <button onClick=${()=>document.getElementById("settings-section")?.scrollIntoView({behavior:"smooth"})}>Settings</button>
+    </nav>
 
-    <section className="hero">
+    <section className="hero" id="today-section">
       <div>
         <div className="eyebrow">Observe the changing sky</div>
-        <h1>Read the sky.<br/><em>Anticipate the moment.</em></h1>
-        <p className="hero-copy">A local forecast for colour, twilight and lunar optics. Every score is paired with the atmospheric signals behind it—and an honest measure of uncertainty.</p>
+        <h1>The sky,<br/><em>observed.</em></h1>
+        <p className="hero-copy">A personal atmospheric photography observatory. Find the moment, understand the conditions, then record what the sky actually does.</p>
       </div>
-      <div className="location-area">
+      <div className="location-area" id="settings-section">
         <div className="location-caption">Observation station</div>
         <div className="profile-picker"><span>Sky palette</span><div className="profile-options"><button className=${profile==="aurora"?"selected":""} onClick=${()=>setProfile("aurora")}><i className="swatch aurora"></i>Aurora</button><button className=${profile==="ember"?"selected":""} onClick=${()=>setProfile("ember")}><i className="swatch ember"></i>Ember</button><button className=${profile==="ocean"?"selected":""} onClick=${()=>setProfile("ocean")}><i className="swatch ocean"></i>Ocean</button><button className=${profile==="moon"?"selected":""} onClick=${()=>setProfile("moon")}><i className="swatch moon"></i>Moon</button></div></div><div className="scene-indicator"><i></i><span>Live atmosphere</span><strong>${sceneLabel}</strong><small>Changes with the selected forecast and module</small></div>
         <div className="location-switch">
@@ -102,12 +109,14 @@ function App(){
       </div>
     </section>
 
+    ${!loading&&!error&&data?html`<section className="sky-canvas"><div className="sky-canvas-copy"><div className="eyebrow">Today’s sky outlook · ${locName}</div><div className="sky-canvas-title">${scoreWord(sunsetScore)}</div><p>${sunsetScore>=55?"Conditions may favour a colourful sunset. Watch the western horizon as the Sun approaches the horizon.":"A quieter sky is possible today. Recheck the cloud layers as sunset approaches."}</p></div><div className="sky-canvas-score"><span>COLOUR POTENTIAL</span><strong>${sunsetScore}<small>/100</small></strong><div className="sky-canvas-time">SUNSET · ${fmtTime(day?.sunset)}</div></div></section>`:null}
+
     ${loading?html`<div className="loading">Reading the latest atmospheric forecast…</div>`:error?html`<div className="error">${error}<br/><button onClick=${()=>loadForecast(location)}>Try again</button></div>`:data?html`
       <div className="date-strip">
         ${data.days.map(d=>html`<button key=${d.date} className=${selectedDate===d.date?"active":""} onClick=${()=>setSelectedDate(d.date)}><strong>${d.isToday?"Today":d.label}</strong><span>${d.date}</span></button>`)}
       </div>
 
-      <section className="module-grid">
+      <section className="module-grid" id="explore-section">
         <button className=${"module-card "+(active==="sun"?"active":"")} onClick=${()=>setActive("sun")}>
           <div className="module-top"><span className="module-icon">◉</span><span className="module-number">01 / SOLAR</span></div>
           <div className="module-label">Sunrise & sunset colour</div>
@@ -217,7 +226,7 @@ function App(){
       </section>
     `:null}
 
-    <section className="content-panel journal">
+    <section className="content-panel journal" id="journal-section">
       <div className="journal-intro"><div className="eyebrow">Field notes · Prediction versus observation</div><h2>Build your sky archive.</h2><p>Record what appeared in the sky. These observations will become the ground truth for evaluating and improving Skywatch's simple scoring rules over time.</p><span className="pill">Latest ${observations.length} entries shown</span>
         <div className="observation-list">
           ${observations.slice(0,5).map(o=>html`<div className="observation" key=${o.id}><div><strong>${o.location==="minalur"?"Minalur":"Peruvanmala"} · ${labelFor(o.phenomenon)}</strong><p>${"★".repeat(o.rating)}${"☆".repeat(5-o.rating)} ${o.notes||"No notes added"}</p></div><time>${fmtDateTime(o.observed_at)}</time></div>`)}
