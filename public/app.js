@@ -35,6 +35,8 @@ function App(){
   const [active,setActive]=useState("sun");
   const [navSection,setNavSection]=useState("today");
   const [appearance,setAppearance]=useState("adaptive");
+  const [clockNow,setClockNow]=useState(Date.now());
+  useEffect(()=>{const timer=setInterval(()=>setClockNow(Date.now()),60000);return ()=>clearInterval(timer);},[]);
   const [profile,setProfile]=useState("aurora");
   const [observations,setObservations]=useState([]);
   const [phenomenon,setPhenomenon]=useState("sunrise_sunset");
@@ -323,6 +325,36 @@ function App(){
   const currentDay=data?.days.find(x=>x.isToday)||data?.days[0];
   const adaptiveMode=currentDay?.sunrise&&currentDay?.sunset&&new Date()>=new Date(currentDay.sunrise)&&new Date()<=new Date(currentDay.sunset)?"light":"dark";
   const appearanceMode=appearance==="adaptive"?adaptiveMode:appearance;
+  const nowMs=clockNow;
+  const nextSkyEvent=(data?.days||[]).flatMap(d=>[
+    {type:"sunrise",at:d.sunrise,date:d.date,score:d.dawn?.colour??0,confidence:d.dawn?.confidence??0,day:d},
+    {type:"sunset",at:d.sunset,date:d.date,score:d.dusk?.colour??0,afterglow:d.dusk?.afterglow??0,confidence:d.dusk?.confidence??0,day:d}
+  ]).filter(e=>e.at&&new Date(e.at).getTime()>nowMs).sort((a,b)=>new Date(a.at)-new Date(b.at))[0];
+  const eventHours=nextSkyEvent?(new Date(nextSkyEvent.at).getTime()-nowMs)/3600000:null;
+  const eventClose=eventHours!=null&&eventHours<=12;
+  const eventTitle=nextSkyEvent?.type==="sunrise"?"Sunrise colours":nextSkyEvent?.type==="sunset"?"Sunset & afterglow":"Sky conditions";
+  const eventTime=nextSkyEvent?.at?fmtTime(nextSkyEvent.at):"";
+  const eventDateLabel=nextSkyEvent?.date===currentDay?.date?"Today":nextSkyEvent?.date||"";
+  const eventScoreLabel=nextSkyEvent?.score>=75?"Strong potential":nextSkyEvent?.score>=55?"Worth watching":nextSkyEvent?.score>=35?"Limited potential":"Low potential";
+  const eventTarget=nextSkyEvent?.type==="sunrise"?"sunrise":"sunset";
+  const regionalChoices=locations.filter(x=>!x.is_archived).map(loc=>{
+    const f=discoveryForecasts[loc.id]||(loc.id===location?data:null);
+    const fd=f?.days?.find(x=>x.date===nextSkyEvent?.date);
+    const score=nextSkyEvent?.type==="sunrise"?(fd?.dawn?.colour??0):(fd?.dusk?.colour??0);
+    return {loc,score,confidence:nextSkyEvent?.type==="sunrise"?(fd?.dawn?.confidence??0):(fd?.dusk?.confidence??0)};
+  }).filter(x=>x.score>0).sort((a,b)=>b.score-a.score);
+  const recommendedPlace=regionalChoices[0]||{loc:locations.find(x=>x.id===location)||data?.location,score:nextSkyEvent?.score??0,confidence:nextSkyEvent?.confidence??0};
+  const recommendedIsOther=recommendedPlace?.loc?.id&&recommendedPlace.loc.id!==location;
+  const visualScene=eventClose?(nextSkyEvent?.type==="sunrise"?"sunrise":"sunset"):(localHour>=5&&localHour<18?"day":"night");
+  const visualImages={
+    sunrise:"https://images.unsplash.com/photo-1470252649378-9c29740c9fa8?auto=format&fit=crop&w=1800&q=85",
+    sunset:"https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=1800&q=85",
+    day:"https://images.unsplash.com/photo-1470770841072-f978cf4d019e?auto=format&fit=crop&w=1800&q=85",
+    night:"https://images.unsplash.com/photo-1475274047050-1d0c0975c63e?auto=format&fit=crop&w=1800&q=85"
+  };
+  const heroBackground="linear-gradient(90deg,rgba(10,18,23,.86),rgba(10,18,23,.32) 72%),linear-gradient(0deg,rgba(10,18,23,.38),transparent 70%),url('"+visualImages[visualScene]+"')";
+  const countdownText=eventHours==null?"No upcoming event in forecast":eventHours<1?Math.max(1,Math.round(eventHours*60))+" min":Math.floor(eventHours)+"h "+Math.round((eventHours%1)*60)+"m";
+
   async function saveObservation(){
     setSaving(true);setMessage("");
     try{
@@ -400,7 +432,23 @@ function App(){
         ${locationMessage&&!locationFormOpen?html`<p className="location-feedback">${locationMessage}</p>`:null}
       </section>`:null}
 <section className="app-screen ${navSection==="today"?"screen-active":"screen-hidden"}" id="screen-today">
-${preForecast}
+
+<section className="sky-canvas live-sky-hero" style=${{backgroundImage:heroBackground}}>
+  <div className="sky-canvas-copy">
+    <div className="eyebrow">${eventClose?"NEXT SKY OPPORTUNITY":"SKY RIGHT NOW"} · ${visualScene.toUpperCase()}</div>
+    <div className="sky-canvas-title">${eventClose?eventTitle:(visualScene==="night"?"A quiet night under the sky":"The sky, as it is now")}</div>
+    <p>${eventClose?"A forecast-led preview of the next observation window. The photograph is an atmospheric reference, not a literal prediction of the exact sky.":"Skywatch is tracking your local sky and watching for the next promising light."}</p>
+    <div className="canvas-tags"><span>${locName}</span><span>${eventClose?eventScoreLabel:"LIVE ATMOSPHERE"}</span><span>${eventClose?countdownText:"ADAPTIVE SCENE"}</span></div>
+  </div>
+  <div className="sky-canvas-score opportunity-card">
+    <span>${eventClose?"RECOMMENDED VIEW":"NEXT EVENT"}</span>
+    <strong>${eventClose?recommendedPlace.score:(nextSkyEvent?.score??"—")}<small>/100</small></strong>
+    <div className="sky-canvas-time">${eventClose?(recommendedPlace.loc?.name||locName):eventTime}</div>
+    <div className="canvas-confidence">${eventClose?eventTime+" · "+(nextSkyEvent?.type||"").toUpperCase():eventTitle+" · "+countdownText}</div>
+    ${eventClose&&recommendedIsOther?html`<button className="hero-recommend-button" onClick=${()=>setLocation(recommendedPlace.loc.id)}>VIEW AT ${recommendedPlace.loc.name.toUpperCase()} ↗</button>`:null}
+    ${eventClose&&!recommendedIsOther?html`<div className="hero-recommend-note">Best among your saved locations</div>`:null}
+  </div>
+</section>
 ${loading?html`<div className="loading">Reading the latest atmospheric forecast…</div>`:error?html`<div className="error">${error}<br/><button onClick=${()=>loadForecast(location)}>Try again</button></div>`:data?html`
 <section className="next-events" id="timeline-section"><div className="section-kicker"><span>NEXT SKY EVENTS</span><span>LOCAL TIME · ${data?.timezone||"Asia/Kolkata"}</span></div><div className="event-row"><article className="event-item event-sunset"><div className="event-icon">☼</div><div><span>Sunset</span><strong>${localTime(day?.sunset)}</strong><small>Colour & afterglow window</small></div><b>01</b></article><article className="event-item event-blue"><div className="event-icon">◒</div><div><span>Blue hour</span><strong>${localTime(twilight?.evening.blueStart)}</strong><small>Twilight photography</small></div><b>02</b></article><article className="event-item event-moon"><div className="event-icon">☾</div><div><span>Lunar halo watch</span><strong>${localTime(halo?.bestTime)}</strong><small>${halo?.label||"No estimate"}</small></div><b>03</b></article></div></section>
       <div className="date-strip">
