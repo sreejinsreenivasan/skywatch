@@ -1,0 +1,17 @@
+{
+  "id": "/",
+  "name": "Skywatch — Field Observatory",
+  "short_name": "Skywatch",
+  "description": "The sky, observed. A personal atmospheric photography observatory.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#111820",
+  "theme_color": "#111820",
+  "categories": [
+    "weather",
+    "photography",
+    "utilities"
+  ]
+}
