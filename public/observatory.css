@@ -169,3 +169,21 @@ body{font-size:16px;line-height:1.6}
 .live-sky-hero .sky-canvas-copy{max-width:690px;z-index:1}.live-sky-hero .sky-canvas-title{max-width:620px}.live-sky-hero .opportunity-card{z-index:1;min-width:0;max-width:250px;justify-self:end;padding:16px 0 16px 22px}.hero-recommend-button{margin-top:14px;padding:10px 12px;border:1px solid rgba(255,255,255,.5);background:rgba(255,255,255,.12);color:#fff;font:9px var(--mono);letter-spacing:.08em;cursor:pointer}.hero-recommend-note{margin-top:12px;color:rgba(255,255,255,.72);font:9px var(--mono)}.live-sky-hero .canvas-tags span{backdrop-filter:blur(5px);background:rgba(8,16,22,.18)}
 .appearance-light .topbar{background:transparent}.appearance-light .main-nav button{color:var(--muted)}.appearance-light .main-nav button.nav-active{color:var(--amber)}.appearance-light .today-heading h1,.appearance-light .panel-heading h2,.appearance-light .module-label,.appearance-light .event-item strong,.appearance-light .metric strong{color:var(--text)}.appearance-light .sky-canvas{color:#fff}.appearance-light .sky-canvas .sky-canvas-copy p{color:rgba(255,255,255,.86)}.appearance-light .sky-canvas .sky-canvas-title{color:#fff}.appearance-light .sky-canvas .eyebrow{color:rgba(255,255,255,.82)}.appearance-light .sky-canvas .canvas-confidence{color:rgba(255,255,255,.72)}.appearance-light .appearance-select-wrap select{background:#fff;color:var(--text)}.appearance-light .appearance-select-wrap select option{background:#fff;color:var(--text)}
 @media(max-width:760px){.live-sky-hero{grid-template-columns:1fr;min-height:430px;padding:24px 20px;gap:18px;background-position:center}.live-sky-hero .opportunity-card{justify-self:start;max-width:none;width:100%;padding:12px 0 0;border-left:0;border-top:1px solid rgba(255,255,255,.4)}.live-sky-hero .sky-canvas-title{font-size:42px}.live-sky-hero .canvas-tags{gap:6px}.live-sky-hero .canvas-tags span{font-size:7px}}
+/* Forecast-driven SVG sky simulator */
+.sky-simulator-hero{position:relative;isolation:isolate;display:grid;grid-template-columns:minmax(0,1fr) minmax(190px,.34fr);gap:24px;align-items:center;min-height:420px;padding:clamp(24px,4vw,48px);overflow:hidden;background:#15263b}
+.sky-simulator-hero .simulation-art{position:absolute;inset:0;z-index:-2;overflow:hidden}
+.sky-simulation,.sky-simulation svg{position:absolute;inset:0;width:100%;height:100%}
+.sky-simulation svg{display:block}
+.sky-simulation:after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(8,16,25,.68) 0%,rgba(8,16,25,.28) 58%,rgba(8,16,25,.16) 100%),linear-gradient(0deg,rgba(8,16,25,.34),transparent 60%)}
+.sky-simulator-hero .sky-canvas-copy{position:relative;z-index:2;max-width:650px}
+.sky-simulator-hero .sky-canvas-title{color:#fff;max-width:620px}
+.sky-simulator-hero .sky-canvas-copy p{color:rgba(255,255,255,.87)}
+.sky-simulator-hero .eyebrow{color:rgba(255,255,255,.84)}
+.sky-simulator-hero .opportunity-card{position:relative;z-index:2;justify-self:end;max-width:250px;padding:17px 0 17px 22px;border-left:1px solid rgba(255,255,255,.38);color:#fff}
+.sky-simulator-hero .opportunity-card>span,.sky-simulator-hero .canvas-confidence{color:rgba(255,255,255,.8)}
+.sky-simulator-hero .opportunity-card strong{color:#fff}
+.sky-simulator-hero .canvas-tags span{background:rgba(8,16,25,.25);border-color:rgba(255,255,255,.25);color:#fff;backdrop-filter:blur(5px)}
+.simulation-caption{position:absolute;left:22px;bottom:20px;right:22px;display:flex;justify-content:space-between;gap:12px;color:rgba(255,255,255,.78);font:8px var(--mono);letter-spacing:.12em;z-index:1}
+.simulation-disclaimer{position:absolute;right:22px;bottom:43px;color:rgba(255,255,255,.64);font:8px var(--sans);z-index:1;text-align:right}
+.sky-simulation g{transform-box:fill-box}
+@media(max-width:760px){.sky-simulator-hero{grid-template-columns:1fr;min-height:490px;padding:25px 20px 78px;gap:15px}.sky-simulator-hero .opportunity-card{justify-self:start;max-width:none;width:100%;padding:12px 0 0;border-left:0;border-top:1px solid rgba(255,255,255,.4)}.sky-simulator-hero .sky-canvas-title{font-size:42px}.simulation-caption{left:14px;right:14px;bottom:14px;flex-direction:column;gap:4px;font-size:7px}.simulation-disclaimer{left:14px;right:14px;bottom:48px;text-align:left;font-size:7px}}

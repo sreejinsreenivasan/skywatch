@@ -26,6 +26,59 @@ function cloudReasons(c){
 function Metric({label,value,sub}){return html`<div className="metric"><span>${label}</span><strong>${value}</strong><small>${sub||""}</small></div>`;}
 function ReasonList({items}){return html`<div className="reason-list">${items.map((x,i)=>html`<div className="reason" key=${i}><i className="reason-dot"></i><span>${x}</span></div>`)}</div>`;}
 
+
+function SkySimulation({phase,conditions,score,cloudDataLabel}){
+  const high=Math.max(0,Math.min(100,Number(conditions?.high??0)));
+  const mid=Math.max(0,Math.min(100,Number(conditions?.mid??0)));
+  const low=Math.max(0,Math.min(100,Number(conditions?.low??0)));
+  const warm=phase==="sunset"||phase==="sunrise";
+  const night=phase==="night";
+  const daylight=phase==="day";
+  const strong=Number(score??0)>=65;
+  const skyTop=night?"#071426":daylight?"#4e8db4":phase==="sunrise"?"#526d91":"#293b5a";
+  const skyMid=night?"#172b49":daylight?"#8db8ce":phase==="sunrise"?(strong?"#e9a17d":"#c58f86"):(strong?"#ed9369":"#b77d75");
+  const skyLow=night?"#33445c":daylight?"#d5d8c8":phase==="sunrise"?"#f6c28c":(strong?"#f8b477":"#d5a18a");
+  const cloudFill=night?"#9aaabd":warm?"#d8c5c1":"#e9f0ef";
+  const cloudOpacity=(v,base)=>Math.min(.92,base+(v/100)*.58);
+  const sunX=phase==="sunrise"?300:phase==="sunset"?900:620;
+  const sunY=phase==="sunrise"?340:phase==="sunset"?340:daylight?155:500;
+  return html`
+  <div className="sky-simulation" role="img" aria-label=${"Illustrative "+phase+" sky simulation using forecast cloud cover: high "+high+" percent, middle "+mid+" percent, low "+low+" percent."}>
+    <svg viewBox="0 0 1200 480" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+      <defs>
+        <linearGradient id="sky-gradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color=${skyTop}/><stop offset="55%" stop-color=${skyMid}/><stop offset="100%" stop-color=${skyLow}/></linearGradient>
+        <linearGradient id="horizon-glow" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#f5c58d" stop-opacity="0"/><stop offset="50%" stop-color=${warm?"#ffd29b":"#d9e5e9"} stop-opacity=${warm?".7":".24"}/><stop offset="100%" stop-color="#f5c58d" stop-opacity="0"/></linearGradient>
+        <radialGradient id="sun-glow"><stop offset="0%" stop-color="#fff2cf" stop-opacity=".95"/><stop offset="38%" stop-color=${warm?"#ffcb91":"#fff0c6"} stop-opacity=".42"/><stop offset="100%" stop-color="#ffd29b" stop-opacity="0"/></radialGradient>
+        <linearGradient id="cloud-shade" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color=${cloudFill}/><stop offset="100%" stop-color=${night?"#34465c":warm?"#755f68":"#8298a3"}/></linearGradient>
+        <filter id="soft-cloud"><feGaussianBlur stdDeviation="2.4"/></filter>
+      </defs>
+      <rect width="1200" height="480" fill="url(#sky-gradient)"/>
+      <rect y="270" width="1200" height="210" fill="url(#horizon-glow)"/>
+      ${night?html`<g fill="#f5ead6" opacity=".7">${Array.from({length:34},(_,i)=>html`<circle key=${i} cx=${(i*173+71)%1180} cy=${(i*79+27)%220} r=${i%4===0?1.8:1.1}/>`)}</g><circle cx="930" cy="100" r="54" fill="#e6e9dc" opacity=".09"/><circle cx="930" cy="100" r="23" fill="#e6e9dc" opacity=".8"/>`:null}
+      ${!night?html`<circle cx=${sunX} cy=${sunY} r="150" fill="url(#sun-glow)"/><circle cx=${sunX} cy=${sunY} r="39" fill="#ffe5b0" opacity=".96"/><circle cx=${sunX-9} cy=${sunY-10} r="27" fill="#fff1d2" opacity=".52"/>`:null}
+      <path d="M0 300 Q170 280 340 306 T680 300 T1020 306 T1200 296 L1200 480 L0 480Z" fill=${night?"#101c2a":warm?"#66545b":"#607d7d"} opacity=".28"/>
+      <g fill="url(#cloud-shade)" filter="url(#soft-cloud)" opacity=${cloudOpacity(high,.16)}>
+        <path d="M-80 166 C-20 115 45 124 90 150 C128 89 218 92 255 147 C322 120 394 156 395 202 L-80 218Z"/>
+        <path d="M380 126 C438 73 518 88 548 129 C606 83 685 98 716 147 C785 123 857 154 870 203 L380 212Z"/>
+        <path d="M820 160 C870 109 955 112 991 151 C1051 110 1137 128 1178 177 L1240 215 L820 222Z"/>
+      </g>
+      <g fill=${warm?"#e9b6a2":night?"#738ba1":"#e5edf0"} opacity=${cloudOpacity(mid,.08)}>
+        <path d="M-70 245 C-20 205 45 207 84 231 C132 188 202 197 229 235 C280 213 343 229 362 267 L-70 285Z"/>
+        <path d="M410 228 C470 180 535 195 568 229 C626 188 693 203 727 244 C790 219 861 240 882 277 L410 290Z"/>
+        <path d="M850 240 C902 202 968 210 1004 243 C1050 207 1127 219 1161 257 L1220 286 L850 290Z"/>
+      </g>
+      <g fill=${night?"#3d4d62":warm?"#8b6870":"#718995"} opacity=${cloudOpacity(low,.04)}>
+        <path d="M-80 326 C-40 278 30 286 62 318 C103 275 171 282 198 323 C244 300 306 317 322 355 L-80 376Z"/>
+        <path d="M330 330 C372 285 443 292 475 327 C520 283 592 290 625 333 C676 306 741 326 760 364 L330 382Z"/>
+        <path d="M770 333 C816 286 888 293 920 328 C969 285 1040 296 1071 337 C1125 312 1185 334 1218 370 L770 390Z"/>
+      </g>
+      <path d="M0 420 Q160 393 300 418 T600 414 T900 418 T1200 407 L1200 480 L0 480Z" fill=${night?"#091522":"#293c42"} opacity=".66"/>
+    </svg>
+    <div className="simulation-caption"><span>SKY SIMULATION · FORECAST-DRIVEN</span><span>HIGH ${Math.round(high)}% · MID ${Math.round(mid)}% · LOW ${Math.round(low)}%</span></div>
+    <div className="simulation-disclaimer">Illustrative cloud layers from forecast cover. Cloud height, optical thickness and movement are not yet modelled.</div>
+  </div>`;
+}
+
 function App(){
   const [location,setLocation]=useState("minalur");
   const [data,setData]=useState(null);
@@ -346,18 +399,17 @@ function App(){
     const f=discoveryForecasts[loc.id]||(loc.id===location?data:null);
     const fd=f?.days?.find(x=>x.date===nextSkyEvent?.date);
     const score=nextSkyEvent?.type==="sunrise"?(fd?.dawn?.colour??0):(fd?.dusk?.colour??0);
-    return {loc,score,confidence:nextSkyEvent?.type==="sunrise"?(fd?.dawn?.confidence??0):(fd?.dusk?.confidence??0)};
+    return {loc,score,forecast:fd,confidence:nextSkyEvent?.type==="sunrise"?(fd?.dawn?.confidence??0):(fd?.dusk?.confidence??0)};
   }).filter(x=>x.score>0).sort((a,b)=>b.score-a.score);
   const recommendedPlace=regionalChoices[0]||{loc:locations.find(x=>x.id===location)||data?.location,score:nextSkyEvent?.score??0,confidence:nextSkyEvent?.confidence??0};
   const recommendedIsOther=recommendedPlace?.loc?.id&&recommendedPlace.loc.id!==location;
   const visualScene=eventClose?(nextSkyEvent?.type==="sunrise"?"sunrise":"sunset"):(localHour>=5&&localHour<18?"day":"night");
-  const visualImages={
-    sunrise:"https://images.unsplash.com/photo-1470252649378-9c29740c9fa8?auto=format&fit=crop&w=1800&q=85",
-    sunset:"https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=1800&q=85",
-    day:"https://images.unsplash.com/photo-1470770841072-f978cf4d019e?auto=format&fit=crop&w=1800&q=85",
-    night:"https://images.unsplash.com/photo-1475274047050-1d0c0975c63e?auto=format&fit=crop&w=1800&q=85"
-  };
-  const heroBackground="linear-gradient(90deg,rgba(10,18,23,.86),rgba(10,18,23,.32) 72%),linear-gradient(0deg,rgba(10,18,23,.38),transparent 70%),url('"+visualImages[visualScene]+"')";
+
+  const simulationDay=eventClose?(recommendedPlace?.forecast||nextSkyEvent?.day):currentDay;
+  const simulationConditions=eventClose?(nextSkyEvent?.type==="sunrise"?simulationDay?.conditions?.morning:simulationDay?.conditions?.evening):(localHour<12?currentDay?.conditions?.morning:currentDay?.conditions?.evening);
+  const simulationPhase=visualScene;
+  const simulationScore=eventClose?recommendedPlace?.score:localHour<12?currentDay?.dawn?.colour:currentDay?.dusk?.colour;
+
   const countdownText=eventHours==null?"No upcoming event in forecast":eventHours<1?Math.max(1,Math.round(eventHours*60))+" min":Math.floor(eventHours)+"h "+Math.round((eventHours%1)*60)+"m";
 
   async function saveObservation(){
@@ -438,12 +490,14 @@ function App(){
       </section>`:null}
 <section className="app-screen ${navSection==="today"?"screen-active":"screen-hidden"}" id="screen-today">
 
-<section className="sky-canvas live-sky-hero" style=${{backgroundImage:heroBackground}}>
+
+<section className="sky-canvas live-sky-hero sky-simulator-hero">
+  <div className="simulation-art"><SkySimulation phase=${simulationPhase} conditions=${simulationConditions} score=${simulationScore} cloudDataLabel="Open-Meteo"/></div>
   <div className="sky-canvas-copy">
     <div className="eyebrow">${eventClose?"NEXT SKY OPPORTUNITY":"SKY RIGHT NOW"} · ${visualScene.toUpperCase()}</div>
     <div className="sky-canvas-title">${eventClose?eventTitle:(visualScene==="night"?"A quiet night under the sky":"The sky, as it is now")}</div>
-    <p>${eventClose?"A forecast-led preview of the next observation window. The photograph is an atmospheric reference, not a literal prediction of the exact sky.":"Skywatch is tracking your local sky and watching for the next promising light."}</p>
-    <div className="canvas-tags"><span>${locName}</span><span>${eventClose?eventScoreLabel:"LIVE ATMOSPHERE"}</span><span>${eventClose?countdownText:"ADAPTIVE SCENE"}</span></div>
+    <p>${eventClose?"A forecast-driven visual simulation for the next observation window.":"A live scene built from the selected location's current forecast."}</p>
+    <div className="canvas-tags"><span>${recommendedPlace?.loc?.name||locName}</span><span>${eventClose?eventScoreLabel:"LIVE ATMOSPHERE"}</span><span>${eventClose?countdownText:"ADAPTIVE SCENE"}</span></div>
   </div>
   <div className="sky-canvas-score opportunity-card">
     <span>${eventClose?"RECOMMENDED VIEW":"NEXT EVENT"}</span>
