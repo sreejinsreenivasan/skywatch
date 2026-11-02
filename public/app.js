@@ -33,6 +33,7 @@ function App(){
   const [error,setError]=useState("");
   const [selectedDate,setSelectedDate]=useState("");
   const [active,setActive]=useState("sun");
+  const [appearance,setAppearance]=useState("adaptive");
   const [profile,setProfile]=useState("aurora");
   const [observations,setObservations]=useState([]);
   const [phenomenon,setPhenomenon]=useState("sunrise_sunset");
@@ -118,6 +119,10 @@ function App(){
   const haloScore=halo?.score??0;
   const scene = active==="halo" && haloScore>=50 ? "lunar" : active==="twilight" ? "twilight" : active==="sun" && sunsetScore>=55 ? "sunset" : (haloScore>=72 ? "lunar" : sunsetScore>=55 ? "sunset" : "twilight");
   const sceneLabel = scene==="sunset" ? "Sunset colours" : scene==="lunar" ? "Lunar atmosphere" : "Blue-hour atmosphere";
+  const localHour=Number(new Intl.DateTimeFormat("en-IN",{timeZone:data?.timezone||"Asia/Kolkata",hour:"2-digit",hourCycle:"h23"}).format(new Date()));
+  const currentDay=data?.days.find(x=>x.isToday)||data?.days[0];
+  const adaptiveMode=currentDay?.sunrise&&currentDay?.sunset&&new Date()>=new Date(currentDay.sunrise)&&new Date()<=new Date(currentDay.sunset)?"light":"dark";
+  const appearanceMode=appearance==="adaptive"?adaptiveMode:appearance;
   async function saveObservation(){
     setSaving(true);setMessage("");
     try{
@@ -132,41 +137,31 @@ function App(){
   }
 
   return html`
-  <main className=${"shell theme-"+active+" profile-"+profile+" scene-"+scene}>
+  <main className=${"shell theme-"+active+" profile-"+profile+" scene-"+scene+" appearance-"+appearanceMode}>
     <header className="topbar">
       <div className="brand"><div className="brand-mark">✳</div><div><div className="brand-name">SKYWATCH</div><div className="brand-sub">Atmospheric intelligence</div></div></div>
-      <div className="header-location"><label htmlFor="header-location-select">OBSERVING FROM</label><select id="header-location-select" value=${location} onChange=${e=>setLocation(e.target.value)}>${locations.filter(x=>!x.is_archived).map(x=>html`<option value=${x.id}>${x.name}${x.is_primary?" · Primary":""}</option>`)}</select><button className="manage-locations-button" onClick=${()=>{setShowLocations(true);setEditingLocation(null);setLocationMessage("");}}>Manage locations ↗</button></div>
+      <div className="header-location"><div className="station-select-wrap"><label htmlFor="header-location-select">OBSERVING FROM</label><select id="header-location-select" value=${location} onChange=${e=>setLocation(e.target.value)}>${locations.filter(x=>!x.is_archived).map(x=>html`<option value=${x.id}>${x.name}${x.is_primary?" · Primary":""}</option>`)}</select></div><div className="appearance-select-wrap"><label htmlFor="appearance-select">APPEARANCE</label><select id="appearance-select" value=${appearance} onChange=${e=>setAppearance(e.target.value)}><option value="adaptive">Adaptive</option><option value="dark">Dark</option><option value="light">Light</option></select></div><button className="manage-locations-button" onClick=${()=>{setShowLocations(true);setEditingLocation(null);setLocationMessage("");}}>Locations ↗</button></div>
     </header>
     ${showLocations?html`<section className="locations-screen"><button onClick=${()=>setShowLocations(false)}>Close location manager ×</button><h2>Your locations</h2><button onClick=${startNewLocation}>＋ Add location</button><div className="saved-locations-list">${locations.map(loc=>html`<article className="saved-location-card"><h3>${loc.name}</h3><p>${loc.subtitle} · ${Number(loc.latitude).toFixed(4)}° N · ${Number(loc.longitude).toFixed(4)}° E</p><p>Elevation ${loc.elevation_m} m · ${loc.timezone}</p><button onClick=${()=>setLocation(loc.id)}>Use</button><button onClick=${()=>locationAction(loc.id,"primary")}>Primary</button><button onClick=${()=>locationAction(loc.id,"favourite")}>Favourite</button><button onClick=${()=>startEditLocation(loc)}>Edit</button><button onClick=${()=>loc.is_archived?locationAction(loc.id,"restore"):locationAction(loc.id,"archive")}>${loc.is_archived?"Restore":"Archive"}</button></article>`)}</div><div className="location-editor"><h3>${editingLocation?"Edit location":"Add location"}</h3><label>Name<input value=${locationForm.name} onChange=${e=>setLocationForm({...locationForm,name:e.target.value})}/></label><label>Area<input value=${locationForm.subtitle} onChange=${e=>setLocationForm({...locationForm,subtitle:e.target.value})}/></label><label>Latitude<input type="number" value=${locationForm.latitude} onChange=${e=>setLocationForm({...locationForm,latitude:e.target.value})}/></label><label>Longitude<input type="number" value=${locationForm.longitude} onChange=${e=>setLocationForm({...locationForm,longitude:e.target.value})}/></label><label>Elevation (m)<input type="number" value=${locationForm.elevation_m} onChange=${e=>setLocationForm({...locationForm,elevation_m:e.target.value})}/></label><label>Time zone<input value=${locationForm.timezone} onChange=${e=>setLocationForm({...locationForm,timezone:e.target.value})}/></label><label>Observation notes<textarea value=${locationForm.observation_notes} onChange=${e=>setLocationForm({...locationForm,observation_notes:e.target.value})}/></label><label><input type="checkbox" checked=${locationForm.is_favourite} onChange=${e=>setLocationForm({...locationForm,is_favourite:e.target.checked})}/> Favourite</label><label><input type="checkbox" checked=${locationForm.is_primary} onChange=${e=>setLocationForm({...locationForm,is_primary:e.target.checked})}/> Primary</label><label><input type="checkbox" checked=${locationForm.coordinates_verified} onChange=${e=>setLocationForm({...locationForm,coordinates_verified:e.target.checked})}/> Coordinates verified</label><button disabled=${locationBusy} onClick=${saveLocation}>${locationBusy?"Saving…":editingLocation?"Save changes":"Add location"}</button><p>${locationMessage}</p></div></section>`:null}
     <nav className="main-nav" aria-label="Main navigation">
-      <button onClick=${()=>document.getElementById("today-section")?.scrollIntoView({behavior:"smooth"})}>Today</button>
+      <button className="nav-active" onClick=${()=>document.getElementById("today-section")?.scrollIntoView({behavior:"smooth"})}>Today</button>
       <button onClick=${()=>document.getElementById("explore-section")?.scrollIntoView({behavior:"smooth"})}>Explore</button>
-      <button onClick=${()=>{setActive("twilight");document.getElementById("explore-section")?.scrollIntoView({behavior:"smooth"});}}>Timeline</button>
+      <button onClick=${()=>{setActive("twilight");document.getElementById("timeline-section")?.scrollIntoView({behavior:"smooth"});}}>Timeline</button>
       <button onClick=${()=>document.getElementById("journal-section")?.scrollIntoView({behavior:"smooth"})}>Journal</button>
-      <button onClick=${()=>document.getElementById("settings-section")?.scrollIntoView({behavior:"smooth"})}>Settings</button>
+      <button onClick=${()=>{document.getElementById("settings-section")?.scrollIntoView({behavior:"smooth"});setShowLocations(true);}}>Settings</button>
     </nav>
 
-    <section className="hero" id="today-section">
-      <div>
-        <div className="eyebrow">Observe the changing sky</div>
-        <h1>The sky,<br/><em>observed.</em></h1>
-        <p className="hero-copy">A personal atmospheric photography observatory. Find the moment, understand the conditions, then record what the sky actually does.</p>
-      </div>
-      <div className="location-area" id="settings-section">
-        <div className="location-caption">Observation station</div>
-        <div className="profile-picker"><span>Sky palette</span><div className="profile-options"><button className=${profile==="aurora"?"selected":""} onClick=${()=>setProfile("aurora")}><i className="swatch aurora"></i>Aurora</button><button className=${profile==="ember"?"selected":""} onClick=${()=>setProfile("ember")}><i className="swatch ember"></i>Ember</button><button className=${profile==="ocean"?"selected":""} onClick=${()=>setProfile("ocean")}><i className="swatch ocean"></i>Ocean</button><button className=${profile==="moon"?"selected":""} onClick=${()=>setProfile("moon")}><i className="swatch moon"></i>Moon</button></div></div><div className="scene-indicator"><i></i><span>Live atmosphere</span><strong>${sceneLabel}</strong><small>Changes with the selected forecast and module</small></div>
-        <div className="selected-location-summary"><strong>${locations.find(x=>x.id===location)?.name||locName}</strong><span>${Number(locations.find(x=>x.id===location)?.latitude??data?.location?.lat??0).toFixed(4)}° N · ${Number(locations.find(x=>x.id===location)?.longitude??data?.location?.lon??0).toFixed(4)}° E</span></div>
-      </div>
-    </section>
+    <section className="today-heading" id="today-section"><div><div className="eyebrow">FIELD OBSERVATORY / ${new Intl.DateTimeFormat("en-IN",{timeZone:data?.timezone||"Asia/Kolkata",weekday:"long",day:"2-digit",month:"long"}).format(new Date())}</div><h1>The sky, <em>observed.</em></h1><p>Look closer. Know when. Understand why.</p></div><div className="station-meta"><span className="station-dot"></span><div><strong>${locations.find(x=>x.id===location)?.name||locName}</strong><small>${Number(locations.find(x=>x.id===location)?.latitude??data?.location?.lat??0).toFixed(4)}° N · ${Number(locations.find(x=>x.id===location)?.longitude??data?.location?.lon??0).toFixed(4)}° E</small></div><button onClick=${()=>setShowLocations(true)}>Change station</button></div></section>
 
-    ${!loading&&!error&&data?html`<section className="sky-canvas"><div className="sky-canvas-copy"><div className="eyebrow">Today’s sky outlook · ${locName}</div><div className="sky-canvas-title">${scoreWord(sunsetScore)}</div><p>${sunsetScore>=55?"Conditions may favour a colourful sunset. Watch the western horizon as the Sun approaches the horizon.":"A quieter sky is possible today. Recheck the cloud layers as sunset approaches."}</p></div><div className="sky-canvas-score"><span>COLOUR POTENTIAL</span><strong>${sunsetScore}<small>/100</small></strong><div className="sky-canvas-time">SUNSET · ${localTime(day?.sunset)}</div></div></section>`:null}
+    ${!loading&&!error&&data?html`<section className="sky-canvas"><div className="sky-canvas-copy"><div className="eyebrow">TODAY’S SKY OUTLOOK / ${locName}</div><div className="sky-canvas-title">${scoreWord(sunsetScore)}</div><p>${sunsetScore>=55?"Conditions may favour a colourful sunset. Watch the western horizon as the Sun approaches the horizon.":"A quieter sky is possible today. Recheck the cloud layers as sunset approaches."}</p><div className="canvas-tags"><span>WESTERN HORIZON</span><span>AFTERGLOW WATCH</span></div></div><div className="sky-canvas-score"><span>SUNSET COLOUR POTENTIAL</span><strong>${sunsetScore}<small>/100</small></strong><div className="sky-canvas-time">SUNSET · ${localTime(day?.sunset)}</div><div className="canvas-confidence">DATA CONFIDENCE · ${day?.dusk.confidence??0}%</div></div></section>`:null}
 
     ${loading?html`<div className="loading">Reading the latest atmospheric forecast…</div>`:error?html`<div className="error">${error}<br/><button onClick=${()=>loadForecast(location)}>Try again</button></div>`:data?html`
+      <section className="next-events" id="timeline-section"><div className="section-kicker"><span>NEXT SKY EVENTS</span><span>LOCAL TIME · ${data?.timezone||"Asia/Kolkata"}</span></div><div className="event-row"><article className="event-item event-sunset"><div className="event-icon">☼</div><div><span>Sunset</span><strong>${localTime(day?.sunset)}</strong><small>Colour & afterglow window</small></div><b>01</b></article><article className="event-item event-blue"><div className="event-icon">◒</div><div><span>Blue hour</span><strong>${localTime(twilight?.evening.blueStart)}</strong><small>Twilight photography</small></div><b>02</b></article><article className="event-item event-moon"><div className="event-icon">☾</div><div><span>Lunar halo watch</span><strong>${localTime(halo?.bestTime)}</strong><small>${halo?.label||"No estimate"}</small></div><b>03</b></article></div></section>
       <div className="date-strip">
         ${data.days.map(d=>html`<button key=${d.date} className=${selectedDate===d.date?"active":""} onClick=${()=>setSelectedDate(d.date)}><strong>${d.isToday?"Today":d.label}</strong><span>${d.date}</span></button>`)}
       </div>
 
-      <section className="module-grid" id="explore-section">
+      <section className="module-grid" id="explore-section"><div className="section-kicker module-kicker"><span>THE THREE PHENOMENA</span><span>SELECT TO EXPLORE</span></div>
         <button className=${"module-card "+(active==="sun"?"active":"")} onClick=${()=>setActive("sun")}>
           <div className="module-top"><span className="module-icon">◉</span><span className="module-number">01 / SOLAR</span></div>
           <div className="module-label">Sunrise & sunset colour</div>
@@ -190,7 +185,7 @@ function App(){
         </button>
       </section>
 
-      <section className="content-panel">
+      <section className="content-panel" id="explore-details">
         ${active==="sun"?html`
           <div className="panel-heading">
             <div><div className="eyebrow">Module 01 · Solar colour</div><h2>${locName} · ${day?.label}</h2><p>Separate estimates for direct Sun visibility and colour potential. Colour can still develop after the solar disc disappears.</p></div>
@@ -276,10 +271,10 @@ function App(){
       </section>
     `:null}
 
-    <section className="content-panel journal" id="journal-section">
+    <section className="content-panel journal" id="journal-section"><div className="journal-heading"><div className="eyebrow">PERSONAL FIELD ARCHIVE</div><h2>What did the sky actually do?</h2><p>Predictions are only useful when compared with what you observe.</p></div>
       <div className="journal-intro"><div className="eyebrow">Field notes · Prediction versus observation</div><h2>Build your sky archive.</h2><p>Record what appeared in the sky. These observations will become the ground truth for evaluating and improving Skywatch's simple scoring rules over time.</p><span className="pill">Latest ${observations.length} entries shown</span>
         <div className="observation-list">
-          ${observations.slice(0,5).map(o=>html`<div className="observation" key=${o.id}><div><strong>${o.location==="minalur"?"Minalur":"Peruvanmala"} · ${labelFor(o.phenomenon)}</strong><p>${"★".repeat(o.rating)}${"☆".repeat(5-o.rating)} ${o.notes||"No notes added"}</p></div><time>${fmtDateTime(o.observed_at)}</time></div>`)}
+          ${observations.slice(0,5).map(o=>html`<div className="observation" key=${o.id}><div><strong>${locations.find(x=>x.id===o.location)?.name||o.location} · ${labelFor(o.phenomenon)}</strong><p>${"★".repeat(o.rating)}${"☆".repeat(5-o.rating)} ${o.notes||"No notes added"}</p></div><time>${fmtDateTime(o.observed_at)}</time></div>`)}
           ${observations.length===0?html`<div className="observation"><div><strong>No observations yet</strong><p>Your first field note will appear here.</p></div></div>`:null}
         </div>
       </div>
