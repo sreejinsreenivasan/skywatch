@@ -163,7 +163,7 @@ function App(){
   useEffect(()=>{loadLocations(true);loadObservations();},[]);
   const day=data?.days.find(x=>x.date===selectedDate)||data?.days[0];
   const twilight=data?.twilight.find(x=>x.date===selectedDate)||data?.twilight[0];
-  const halo=data?.halo;
+  const halo=data?.halos?.find(x=>x.date===selectedDate)||data?.halo;
   const locName=data?.location?.name||"Skywatch";
   const localTime=(d)=>!d?"—":new Intl.DateTimeFormat("en-IN",{timeZone:data?.timezone||"Asia/Kolkata",hour:"2-digit",minute:"2-digit",hour12:true}).format(new Date(d));
   const sunsetScore=day?.dusk?.colour??0;
