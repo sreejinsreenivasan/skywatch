@@ -301,7 +301,9 @@ function App(){
       const j=await r.json();
       if(!r.ok)throw new Error(j.error||"Forecast unavailable");
       setData(j);
-      const today=j.days.find(x=>x.isToday)||j.days[0];
+      const responseDays=Array.isArray(j.days)?j.days:[];
+      if(!responseDays.length)throw new Error("Forecast response did not include any forecast days.");
+      const today=responseDays.find(x=>x.isToday)||responseDays[0];
       setSelectedDate(today?.date||"");
     }catch(e){setError(e.message||"Could not load forecast");}
     finally{setLoading(false);}
@@ -312,9 +314,12 @@ function App(){
   useEffect(()=>{loadForecast(location);},[location]);
   useEffect(()=>{if(!showLocations)return;const q=locationQuery.trim();searchSequence.current+=1;if(q.length<2){setLocationResults([]);setLocationSearchError("");setLocationSearching(false);return;}const timer=setTimeout(()=>searchLocations(q),300);return ()=>clearTimeout(timer);},[locationQuery,showLocations]);
   useEffect(()=>{loadLocations(true);loadObservations();},[]);
-  const day=data?.days.find(x=>x.date===selectedDate)||data?.days[0];
-  const twilight=data?.twilight.find(x=>x.date===selectedDate)||data?.twilight[0];
-  const halo=data?.halos?.find(x=>x.date===selectedDate)||data?.halo;
+  const forecastDays=Array.isArray(data?.days)?data.days:[];
+  const twilightDays=Array.isArray(data?.twilight)?data.twilight:[];
+  const haloDays=Array.isArray(data?.halos)?data.halos:[];
+  const day=forecastDays.find(x=>x.date===selectedDate)||forecastDays[0]||null;
+  const twilight=twilightDays.find(x=>x.date===selectedDate)||twilightDays[0]||null;
+  const halo=haloDays.find(x=>x.date===selectedDate)||data?.halo||null;
   const locName=data?.location?.name||"Skywatch";
   const localTime=(d)=>!d?"—":new Intl.DateTimeFormat("en-IN",{timeZone:data?.timezone||"Asia/Kolkata",hour:"2-digit",minute:"2-digit",hour12:true}).format(new Date(d));
   const sunsetScore=day?.dusk?.colour??0;
@@ -322,7 +327,7 @@ function App(){
   const scene = active==="halo" && haloScore>=50 ? "lunar" : active==="twilight" ? "twilight" : active==="sun" && sunsetScore>=55 ? "sunset" : (haloScore>=72 ? "lunar" : sunsetScore>=55 ? "sunset" : "twilight");
   const sceneLabel = scene==="sunset" ? "Sunset colours" : scene==="lunar" ? "Lunar atmosphere" : "Blue-hour atmosphere";
   const localHour=Number(new Intl.DateTimeFormat("en-IN",{timeZone:data?.timezone||"Asia/Kolkata",hour:"2-digit",hourCycle:"h23"}).format(new Date()));
-  const currentDay=data?.days.find(x=>x.isToday)||data?.days[0];
+  const currentDay=forecastDays.find(x=>x.isToday)||forecastDays[0]||null;
   const adaptiveMode=currentDay?.sunrise&&currentDay?.sunset&&new Date()>=new Date(currentDay.sunrise)&&new Date()<=new Date(currentDay.sunset)?"light":"dark";
   const appearanceMode=appearance==="adaptive"?adaptiveMode:appearance;
   const nowMs=clockNow;
