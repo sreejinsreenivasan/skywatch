@@ -47,6 +47,12 @@ function App(){
   const [editingLocation,setEditingLocation]=useState(null);
   const [locationBusy,setLocationBusy]=useState(false);
   const [locationMessage,setLocationMessage]=useState("");
+  const [locationQuery,setLocationQuery]=useState("");
+  const [locationResults,setLocationResults]=useState([]);
+  const [locationSearching,setLocationSearching]=useState(false);
+  const [locationSearchError,setLocationSearchError]=useState("");
+  const [showArchivedLocations,setShowArchivedLocations]=useState(false);
+  const [locationFormOpen,setLocationFormOpen]=useState(false);
   const emptyLocation={name:"",subtitle:"",latitude:"",longitude:"",elevation_m:"0",timezone:"Asia/Kolkata",is_favourite:false,is_primary:false,observation_notes:"",coordinates_verified:false};
   const [locationForm,setLocationForm]=useState(emptyLocation);
 
@@ -55,19 +61,42 @@ function App(){
       const r=await fetch(API+"/locations"+(includeArchived?"?archived=true":""));
       const j=await r.json();
       if(!r.ok)throw new Error(j.error||"Could not load locations");
-      setLocations(j.locations||[]);
-      const primary=(j.locations||[]).find(x=>x.is_primary&&!x.is_archived);
+      const nextLocations=j.locations||[];
+      setLocations(nextLocations);
+      const primary=nextLocations.find(x=>x.is_primary&&!x.is_archived);
       if(!locationsLoaded&&primary){setLocation(primary.id);setLocationsLoaded(true);}
+      return nextLocations;
     }catch(e){setLocationMessage(e.message||"Could not load saved locations.");}
   }
   function startNewLocation(){
     setEditingLocation(null);
     setLocationForm({...emptyLocation});
     setLocationMessage("");
+    setLocationFormOpen(true);
     setShowLocations(true);
+  }
+  async function searchLocations(){
+    const query=locationQuery.trim();
+    if(query.length<2){setLocationSearchError("Enter at least two characters to search.");return;}
+    setLocationSearching(true);setLocationSearchError("");setLocationResults([]);
+    try{
+      const url="https://geocoding-api.open-meteo.com/v1/search?name="+encodeURIComponent(query)+"&count=8&language=en&format=json";
+      const r=await fetch(url);const j=await r.json();
+      if(!r.ok)throw new Error("Place search is temporarily unavailable.");
+      const results=(j.results||[]).map(x=>({...x,display:[x.name,x.admin1,x.country].filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i).join(", ")}));
+      setLocationResults(results);
+      if(!results.length)setLocationSearchError("No matching places found. You can still enter coordinates manually.");
+    }catch(e){setLocationSearchError(e.message||"Could not search places.");}
+    finally{setLocationSearching(false);}
+  }
+  function chooseSearchResult(place){
+    setLocationForm({...emptyLocation,name:place.name||"",subtitle:[place.admin1,place.country].filter(Boolean).join(", "),latitude:String(place.latitude),longitude:String(place.longitude),elevation_m:"0",timezone:place.timezone||"Asia/Kolkata",coordinates_verified:false});
+    setLocationResults([]);
+    setLocationSearchError("Place selected. Confirm the coordinates and elevation before saving.");
   }
   function startEditLocation(loc){
     setEditingLocation(loc.id);
+    setLocationFormOpen(true);
     setLocationForm({name:loc.name,subtitle:loc.subtitle||"",latitude:String(loc.latitude),longitude:String(loc.longitude),elevation_m:String(loc.elevation_m??0),timezone:loc.timezone||"Asia/Kolkata",is_favourite:Boolean(loc.is_favourite),is_primary:Boolean(loc.is_primary),observation_notes:loc.observation_notes||"",coordinates_verified:Boolean(loc.coordinates_verified)});
     setLocationMessage("");
   }
@@ -77,7 +106,7 @@ function App(){
       const payload={...locationForm,latitude:Number(locationForm.latitude),longitude:Number(locationForm.longitude),elevation_m:Number(locationForm.elevation_m)};
       const r=await fetch(API+"/locations",{method:editingLocation?"PUT":"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(editingLocation?{...payload,id:editingLocation}:{...payload})});
       const j=await r.json();if(!r.ok)throw new Error(j.error||"Could not save location");
-      await loadLocations(true);setEditingLocation(null);setLocationForm({...emptyLocation});setLocationMessage("Location saved.");
+      await loadLocations(true);setEditingLocation(null);setLocationForm({...emptyLocation});setLocationFormOpen(false);setLocationMessage("Location saved.");
       if(j.location?.id)setLocation(j.location.id);
     }catch(e){setLocationMessage(e.message||"Could not save location.");}
     finally{setLocationBusy(false);}
@@ -87,9 +116,9 @@ function App(){
     try{
       const r=await fetch(API+"/locations",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({id,action,value})});
       const j=await r.json();if(!r.ok)throw new Error(j.error||"Could not update location");
-      await loadLocations(true);
+      const refreshed=await loadLocations(true);
       if(action==="primary"||action==="restore")setLocation(id);
-      if(action==="archive"&&location===id){const primary=locations.find(x=>x.is_primary&&x.id!==id&&!x.is_archived);if(primary)setLocation(primary.id);}
+      if(action==="archive"&&location===id){const primary=refreshed.find(x=>x.is_primary&&!x.is_archived);if(primary)setLocation(primary.id);else setLocation(refreshed.find(x=>!x.is_archived)?.id||"");setShowLocations(false);}
     }catch(e){setLocationMessage(e.message||"Could not update location.");}
     finally{setLocationBusy(false);}
   }
@@ -142,7 +171,62 @@ function App(){
       <div className="brand"><div className="brand-mark">✳</div><div><div className="brand-name">SKYWATCH</div><div className="brand-sub">Atmospheric intelligence</div></div></div>
       <div className="header-location"><div className="station-select-wrap"><label htmlFor="header-location-select">OBSERVING FROM</label><select id="header-location-select" value=${location} onChange=${e=>setLocation(e.target.value)}>${locations.filter(x=>!x.is_archived).map(x=>html`<option value=${x.id}>${x.name}${x.is_primary?" · Primary":""}</option>`)}</select></div><div className="appearance-select-wrap"><label htmlFor="appearance-select">APPEARANCE</label><select id="appearance-select" value=${appearance} onChange=${e=>setAppearance(e.target.value)}><option value="adaptive">Adaptive</option><option value="dark">Dark</option><option value="light">Light</option></select></div><button className="manage-locations-button" onClick=${()=>{setShowLocations(true);setEditingLocation(null);setLocationMessage("");}}>Locations ↗</button></div>
     </header>
-    ${showLocations?html`<section className="locations-screen"><button onClick=${()=>setShowLocations(false)}>Close location manager ×</button><h2>Your locations</h2><button onClick=${startNewLocation}>＋ Add location</button><div className="saved-locations-list">${locations.map(loc=>html`<article className="saved-location-card"><h3>${loc.name}</h3><p>${loc.subtitle} · ${Number(loc.latitude).toFixed(4)}° N · ${Number(loc.longitude).toFixed(4)}° E</p><p>Elevation ${loc.elevation_m} m · ${loc.timezone}</p><button onClick=${()=>setLocation(loc.id)}>Use</button><button onClick=${()=>locationAction(loc.id,"primary")}>Primary</button><button onClick=${()=>locationAction(loc.id,"favourite")}>Favourite</button><button onClick=${()=>startEditLocation(loc)}>Edit</button><button onClick=${()=>loc.is_archived?locationAction(loc.id,"restore"):locationAction(loc.id,"archive")}>${loc.is_archived?"Restore":"Archive"}</button></article>`)}</div><div className="location-editor"><h3>${editingLocation?"Edit location":"Add location"}</h3><label>Name<input value=${locationForm.name} onChange=${e=>setLocationForm({...locationForm,name:e.target.value})}/></label><label>Area<input value=${locationForm.subtitle} onChange=${e=>setLocationForm({...locationForm,subtitle:e.target.value})}/></label><label>Latitude<input type="number" value=${locationForm.latitude} onChange=${e=>setLocationForm({...locationForm,latitude:e.target.value})}/></label><label>Longitude<input type="number" value=${locationForm.longitude} onChange=${e=>setLocationForm({...locationForm,longitude:e.target.value})}/></label><label>Elevation (m)<input type="number" value=${locationForm.elevation_m} onChange=${e=>setLocationForm({...locationForm,elevation_m:e.target.value})}/></label><label>Time zone<input value=${locationForm.timezone} onChange=${e=>setLocationForm({...locationForm,timezone:e.target.value})}/></label><label>Observation notes<textarea value=${locationForm.observation_notes} onChange=${e=>setLocationForm({...locationForm,observation_notes:e.target.value})}/></label><label><input type="checkbox" checked=${locationForm.is_favourite} onChange=${e=>setLocationForm({...locationForm,is_favourite:e.target.checked})}/> Favourite</label><label><input type="checkbox" checked=${locationForm.is_primary} onChange=${e=>setLocationForm({...locationForm,is_primary:e.target.checked})}/> Primary</label><label><input type="checkbox" checked=${locationForm.coordinates_verified} onChange=${e=>setLocationForm({...locationForm,coordinates_verified:e.target.checked})}/> Coordinates verified</label><button disabled=${locationBusy} onClick=${saveLocation}>${locationBusy?"Saving…":editingLocation?"Save changes":"Add location"}</button><p>${locationMessage}</p></div></section>`:null}
+    ${showLocations?html`
+      <section className="locations-screen observatory-locations" aria-label="Location management">
+        <div className="locations-heading">
+          <div><div className="eyebrow">FIELD OBSERVATORY / STATIONS</div><h2>Your observing locations</h2><p>Choose where Skywatch looks at the sky. Each station keeps its own coordinates, elevation and local time.</p></div>
+          <button className="location-close" onClick=${()=>{setShowLocations(false);setLocationFormOpen(false);}}>Close ×</button>
+        </div>
+        <div className="location-toolbar">
+          <div className="location-count"><strong>${locations.filter(x=>!x.is_archived).length}</strong><span>ACTIVE STATIONS</span><i>·</i><strong>${locations.filter(x=>x.is_favourite&&!x.is_archived).length}</strong><span>FAVOURITES</span></div>
+          <button className="location-add" onClick=${startNewLocation}>＋ Add a location</button>
+        </div>
+        <div className="location-search">
+          <div><span className="eyebrow">FIND A PLACE</span><p>Search towns, cities or landmarks, then confirm the coordinates.</p></div>
+          <div className="location-search-input"><input aria-label="Search places" placeholder="e.g. Varkala, Minalur, Kochi" value=${locationQuery} onChange=${e=>setLocationQuery(e.target.value)} onKeyDown=${e=>{if(e.key==="Enter")searchLocations();}}/><button disabled=${locationSearching} onClick=${searchLocations}>${locationSearching?"Searching…":"Search places"}</button></div>
+          ${locationSearchError?html`<p className="location-feedback">${locationSearchError}</p>`:null}
+          ${locationResults.length?html`<div className="location-search-results">${locationResults.map((place,i)=>html`<button key=${place.id||i} onClick=${()=>chooseSearchResult(place)}><strong>${place.name}</strong><span>${place.display}</span><small>${Number(place.latitude).toFixed(4)}, ${Number(place.longitude).toFixed(4)} · ${place.timezone||"Timezone unavailable"}</small></button>`)}</div>`:null}
+        </div>
+        <div className="locations-section-label"><span>YOUR STATIONS</span><span>SELECT A STATION TO OBSERVE FROM</span></div>
+        <div className="saved-locations-list">
+          ${locations.filter(loc=>!loc.is_archived).map(loc=>html`
+            <article key=${loc.id} className=${"saved-location-card observatory-location-card "+(location===loc.id?"is-current":"")}>
+              <div className="location-card-top"><div className="location-card-tags">${location===loc.id?html`<span className="location-tag tag-current">CURRENT STATION</span>`:null}${loc.is_primary?html`<span className="location-tag">PRIMARY</span>`:null}${loc.is_favourite?html`<span className="location-tag tag-favourite">★ FAVOURITE</span>`:null}</div><button className="location-more" onClick=${()=>startEditLocation(loc)}>Edit details ↗</button></div>
+              <h3>${loc.name}</h3><p className="location-subtitle">${loc.subtitle||"Saved observation location"}</p>
+              <div className="location-coordinates"><span>LAT <strong>${Number(loc.latitude).toFixed(4)}°</strong></span><span>LON <strong>${Number(loc.longitude).toFixed(4)}°</strong></span><span>ELEV <strong>${loc.elevation_m??0} m</strong></span></div>
+              <div className="location-card-bottom"><span className="location-zone">${loc.timezone||"Timezone not set"} · ${loc.coordinates_verified?"Coordinates verified":"Approximate coordinates"}</span><div className="location-card-actions">
+                ${location!==loc.id?html`<button className="location-use" disabled=${locationBusy} onClick=${()=>{setLocation(loc.id);setShowLocations(false);}}>Observe here</button>`:html`<span className="location-active-label">Observing here ✓</span>`}
+                <button aria-label=${loc.is_favourite?"Remove favourite":"Add favourite"} disabled=${locationBusy} onClick=${()=>locationAction(loc.id,"favourite",!loc.is_favourite)}>${loc.is_favourite?"★":"☆"}</button>
+                ${!loc.is_primary?html`<button disabled=${locationBusy} onClick=${()=>locationAction(loc.id,"primary")}>Set primary</button>`:null}
+                <button disabled=${locationBusy} onClick=${()=>locationAction(loc.id,"archive")}>${"Archive"}</button>
+              </div></div>
+            </article>`)}
+        </div>
+        <div className="archived-locations">
+          <button className="archive-toggle" onClick=${()=>setShowArchivedLocations(!showArchivedLocations)}>${showArchivedLocations?"Hide":"Show"} archived locations (${locations.filter(x=>x.is_archived).length})</button>
+          ${showArchivedLocations?html`<div className="archived-list">${locations.filter(x=>x.is_archived).map(loc=>html`<div key=${loc.id}><span><strong>${loc.name}</strong><small>${loc.subtitle||"Archived station"}</small></span><button disabled=${locationBusy} onClick=${()=>locationAction(loc.id,"restore")}>Restore</button></div>`)}</div>`:null}
+        </div>
+        ${locationFormOpen?html`
+          <div className="location-editor observatory-location-editor">
+            <div className="editor-heading"><div><div className="eyebrow">STATION CONFIGURATION</div><h3>${editingLocation?"Edit station":"Add an observing station"}</h3><p>Coordinates drive the forecast, solar and lunar calculations, and event times.</p></div><button onClick=${()=>{setLocationFormOpen(false);setEditingLocation(null);}}>Cancel</button></div>
+            <div className="location-form-grid">
+              <label>Station name<input placeholder="e.g. Peruvanmala" value=${locationForm.name} onChange=${e=>setLocationForm({...locationForm,name:e.target.value})}/></label>
+              <label>Area / region<input placeholder="e.g. Thrissur, Kerala" value=${locationForm.subtitle} onChange=${e=>setLocationForm({...locationForm,subtitle:e.target.value})}/></label>
+              <label>Latitude<input type="number" step="any" min="-90" max="90" placeholder="10.6250" value=${locationForm.latitude} onChange=${e=>setLocationForm({...locationForm,latitude:e.target.value,coordinates_verified:false})}/></label>
+              <label>Longitude<input type="number" step="any" min="-180" max="180" placeholder="76.2167" value=${locationForm.longitude} onChange=${e=>setLocationForm({...locationForm,longitude:e.target.value,coordinates_verified:false})}/></label>
+              <label>Elevation (metres)<input type="number" min="-500" max="9000" value=${locationForm.elevation_m} onChange=${e=>setLocationForm({...locationForm,elevation_m:e.target.value})}/></label>
+              <label>Time zone (IANA)<input placeholder="Asia/Kolkata" value=${locationForm.timezone} onChange=${e=>setLocationForm({...locationForm,timezone:e.target.value})}/></label>
+              <label className="location-notes-field">Observation notes<textarea placeholder="Horizon direction, obstructions, favourite viewpoints…" value=${locationForm.observation_notes} onChange=${e=>setLocationForm({...locationForm,observation_notes:e.target.value})}/></label>
+            </div>
+            <div className="location-form-options">
+              <label><input type="checkbox" checked=${locationForm.is_favourite} onChange=${e=>setLocationForm({...locationForm,is_favourite:e.target.checked})}/> Favourite station</label>
+              <label><input type="checkbox" checked=${locationForm.is_primary} onChange=${e=>setLocationForm({...locationForm,is_primary:e.target.checked})}/> Make primary</label>
+              <label><input type="checkbox" checked=${locationForm.coordinates_verified} onChange=${e=>setLocationForm({...locationForm,coordinates_verified:e.target.checked})}/> I have verified these coordinates</label>
+            </div>
+            <div className="location-editor-footer"><p>${locationMessage||"Please verify the pin coordinates before relying on precise event times."}</p><button disabled=${locationBusy||!locationForm.name.trim()||!locationForm.latitude||!locationForm.longitude} onClick=${saveLocation}>${locationBusy?"Saving…":editingLocation?"Save station":"Save location"}</button></div>
+          </div>`:null}
+        ${locationMessage&&!locationFormOpen?html`<p className="location-feedback">${locationMessage}</p>`:null}
+      </section>`:null}
     <nav className="main-nav" aria-label="Main navigation">
       <button className="nav-active" onClick=${()=>document.getElementById("today-section")?.scrollIntoView({behavior:"smooth"})}>Today</button>
       <button onClick=${()=>document.getElementById("explore-section")?.scrollIntoView({behavior:"smooth"})}>Explore</button>
