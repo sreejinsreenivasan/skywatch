@@ -129,7 +129,7 @@ function App(){
         ${active==="sun"?html`
           <div className="panel-heading">
             <div><div className="eyebrow">Module 01 · Solar colour</div><h2>${locName} · ${day?.label}</h2><p>Separate estimates for direct Sun visibility and colour potential. Colour can still develop after the solar disc disappears.</p></div>
-            <div className="confidence">${day?.dusk.confidence??0}% forecast confidence</div>
+            <div className="confidence">${day?.dusk.confidence??0}% confidence estimate</div>
           </div>
           <div className="detail-grid">
             <div className="detail-card">
@@ -150,11 +150,11 @@ function App(){
             <${Metric} label="Afterglow potential" value=${day?.dusk.afterglow+"/100"} sub="Post-sunset colour"/>
             <${Metric} label="Dawn colour" value=${day?.dawn.colour+"/100"} sub="Eastern-sky estimate"/>
           </div>
-          <div className="note">The current model samples forecast cloud layers at the location, not a full east/west horizon scan. Local terrain, distant cloud banks and aerosol optical depth can materially change the actual view. Treat this as a planning signal, not a guaranteed colourful sunset.</div>
+          <div className="note">Confidence estimates are conservative and rule-based, not statistically calibrated. The current model samples forecast cloud layers at the location, not a full east/west horizon scan. Local terrain, distant cloud banks and aerosol optical depth can materially change the actual view. Treat this as a planning signal, not a guaranteed colourful sunset.</div>
         `:active==="twilight"?html`
           <div className="panel-heading">
             <div><div className="eyebrow">Module 02 · Light transitions</div><h2>Twilight and blue hour</h2><p>Solar timing is calculated from location and date. The visual blue-hour window is an operational photographic definition.</p></div>
-            <div className="confidence">${day?.dusk.confidence??0}% weather-data confidence</div>
+            <div className="confidence">${day?.dusk.confidence??0}% confidence estimate</div>
           </div>
           <div className="detail-grid">
             <div className="detail-card"><h3>Morning transitions</h3><div className="timeline">

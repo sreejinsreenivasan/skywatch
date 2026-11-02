@@ -13,6 +13,7 @@ export default async function (req, res) {
     latitude: String(loc.lat),
     longitude: String(loc.lon),
     hourly: "temperature_2m,relative_humidity_2m,dew_point_2m,precipitation_probability,weather_code,cloud_cover,cloud_cover_low,cloud_cover_mid,cloud_cover_high,visibility,wind_speed_10m,wind_direction_10m",
+    daily: "sunrise,sunset",
     forecast_days: "5",
     timezone: "Asia/Kolkata",
     timeformat: "iso8601"
@@ -31,7 +32,7 @@ export default async function (req, res) {
     res.setHeader("Cache-Control", "public, max-age=900, stale-while-revalidate=900");
     return res.json(forecast);
   } catch (error) {
-    console.error("Forecast error", { message: String(error), locationId });
+    console.error("Forecast error", error?.message || JSON.stringify(error), error?.stack || "", locationId);
     return res.status(502).json({ error: "Could not retrieve the weather forecast. Please retry." });
   }
 }
