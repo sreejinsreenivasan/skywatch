@@ -1,5 +1,4 @@
 import { db } from "hatchable";
-import { LOCATIONS } from "lib/sky.js";
 
 export const access = "public";
 export const methods = ["GET", "POST"];
@@ -7,19 +6,22 @@ export const methods = ["GET", "POST"];
 export default async function (req, res) {
   if (req.method === "GET") {
     const location = req.query.location ? String(req.query.location).toLowerCase() : null;
-    if (location && !LOCATIONS[location]) return res.status(400).json({ error: "Unknown location." });
+    if (location) {
+      const exists = await db.query("SELECT id FROM sky_locations WHERE id=$1", [location]);
+      if (!exists.rows.length) return res.status(400).json({ error: "Unknown saved location." });
+    }
     const query = location
       ? await db.query("SELECT id, location, phenomenon, rating, notes, observed_at FROM sky_observations WHERE location = $1 ORDER BY observed_at DESC LIMIT 30", [location])
       : await db.query("SELECT id, location, phenomenon, rating, notes, observed_at FROM sky_observations ORDER BY observed_at DESC LIMIT 30");
     return res.json({ observations: query.rows });
   }
-
   const body = req.body || {};
   const location = String(body.location || "").toLowerCase();
   const phenomenon = String(body.phenomenon || "");
   const rating = Number(body.rating);
   const notes = String(body.notes || "").trim().slice(0,1200);
-  if (!LOCATIONS[location]) return res.status(400).json({ error: "Choose Minalur or Peruvanmala." });
+  const exists = await db.query("SELECT id FROM sky_locations WHERE id=$1 AND is_archived=false", [location]);
+  if (!exists.rows.length) return res.status(400).json({ error: "Choose an active saved location." });
   if (!["sunrise_sunset","twilight","lunar_halo"].includes(phenomenon)) return res.status(400).json({ error: "Choose one of the three Skywatch phenomena." });
   if (!Number.isInteger(rating) || rating < 1 || rating > 5) return res.status(400).json({ error: "Rating must be from 1 to 5." });
   const inserted = await db.query(
