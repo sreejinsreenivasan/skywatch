@@ -1,0 +1,5 @@
+# Hatchable project manifest. This file marks the folder as a
+# Hatchable project and declares the services it uses.
+# Reference: https://hatchable.com/docs/developers/config
+name = "Skywatch"
+description = "Atmospheric intelligence for Minalur and Peruvanmala, Kerala: explainable sunrise/sunset colour, twilight and blue-hour, and lunar halo forecasts."
